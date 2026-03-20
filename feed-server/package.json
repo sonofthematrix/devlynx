@@ -5,7 +5,11 @@
   "main": "server-with-ai.js",
   "scripts": {
     "start": "node server-with-ai.js",
-    "vercel-build": "echo \"Skip static build (API only).\""
+    "vercel-build": "node scripts/vercel-build.js",
+    "gen:license-jwt-keys": "node ../scripts/gen-license-jwt-keys.js",
+    "build": "npm run build --prefix ..",
+    "build:prod": "npm run build:prod --prefix ..",
+    "release": "npm run release --prefix .."
   },
   "engines": {
     "node": "20.x"

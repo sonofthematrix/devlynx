@@ -24,6 +24,18 @@ DevLynx AI is **freemium**: **Free** = core dev tools + a shared **AI trial**; *
 - **Gating:** `canUseProTrialFeature()` — Pro (`devlens_plan === 'pro'`) always allowed; otherwise trial must be &gt; 0.
 - **Decrement:** After a **successful** AI response (`success: true` from feed server where applicable). Panel handles panel UI; **background** applies the same trial rules for **context-menu** AI actions (`aiContext` selection flows).
 - **Feed server:** `devQuestion` responses include `success: true | false`. `generateMod` includes `success` when parseable CSS/JS was returned.
+- **User OpenAI key (BYOK) & trial:** For `OPENAI_AI` flows (`devQuestion`, `aiContext`, `generateMod`), **Free** users need a valid **server-signed trial JWT** when the feed server has **`LICENSE_JWT_PRIVATE_KEY`** set (`GET /trial-token`, **`POST /trial-consume`** after each successful AI use). The extension verifies JWTs with **`DEVLYNX_LICENSE_JWT_PUBLIC_PEM`** in `src/license-jwt-public.js` (see **`developer/LICENSE-JWT-KEYS.md`**).
+- **Fallback (no server signing):** If **`/trial-token`** is missing, misconfigured, or unreachable, **client `trialUsesRemaining`** &gt; 0 still allows AI; **`postTrialConsumeAfterAi`** then decrements **`trialUsesRemaining`** only when there is no trial JWT (`src/background.js`).
+
+### Server-side trial storage
+
+| Deploy | Persistence |
+|--------|-------------|
+| Local / Railway | `feed-server/trials.json` (gitignored) |
+| Vercel + Blob | Blob object `internal/devlynx-trials.json` (same token as screenshots) |
+| Vercel, no Blob | In-memory only — **not** safe for enforcement (cold starts reset counts). |
+
+`GET /health` includes `trialJwt`, `trialPersistence`, and `trialDefaultLimit`.
 
 ---
 

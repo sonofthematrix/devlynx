@@ -7,8 +7,8 @@ The **feed-server** runs as a **Node Serverless Function** at **`api/server/[[..
 1. [Vercel Dashboard](https://vercel.com) → **Add New** → **Project** → import your Git repo.
 2. **Root Directory:** `feed-server` (critical).
 3. Framework Preset: **Other** (no framework).
-4. **Build Command:** leave empty or use `npm run vercel-build` (no-op).
-5. **Output Directory:** leave empty / default (not used for API-only).
+4. **Build Command:** `npm run vercel-build` (creates `public/` for Vercel’s static output step).
+5. **Output Directory:** `public` — or match **`vercel.json`** (`buildCommand` + `outputDirectory`). The repo includes a tiny **`feed-server/public/index.html`** placeholder; **`/`** is still served by the API via rewrites.
 
 **Node version:** `feed-server/package.json` sets `"engines": { "node": "20.x" }` so Vercel uses **Node 20** and you avoid the `"node": ">=18"` warning about automatic major upgrades. You can override in **Project → Settings → General → Node.js Version** if needed.
 
@@ -22,7 +22,9 @@ In **Project → Settings → Environment Variables**, add (Production + Preview
 | `GUMROAD_PRODUCT_ID` | If using Gumroad license checks. |
 | `OPENAI_MODEL` | Optional (`gpt-4o-mini` default in code). |
 | `DEV_CODES` | Optional. |
-| `BLOB_READ_WRITE_TOKEN` | From **Storage → Blob** (below). |
+| `BLOB_READ_WRITE_TOKEN` | From **Storage → Blob** (below). Screenshots + **authoritative trial counts** (see below). |
+| `LICENSE_JWT_PRIVATE_KEY` | PEM for RS256 — enables **`GET /trial-token`** and **`POST /trial-consume`** (see **`developer/LICENSE-JWT-KEYS.md`**). |
+| `DEVLYNX_TRIAL_LIMIT` | Optional. Initial trial uses per device (default **20**). |
 
 Do **not** rely on `PORT` on Vercel.
 
@@ -34,13 +36,15 @@ Do **not** rely on `PORT` on Vercel.
 
 **Behaviour:** When `BLOB_READ_WRITE_TOKEN` is set, `POST /` with `type: "screenshot"` uploads to Blob and returns a public **`path`** URL. Locally or on Railway **without** this token, screenshots still go to **`feed-server/screenshots/`**.
 
+**Trial accounting on Vercel:** With **`LICENSE_JWT_PRIVATE_KEY`** + **`BLOB_READ_WRITE_TOKEN`**, trial usage is persisted in Blob as **`internal/devlynx-trials.json`**. Without Blob on Vercel, trial counts are **in-memory only** (unstable); prefer Blob or Railway for strict enforcement.
+
 ## 4. Custom domain
 
 Point **`api.devlynx.ai`** (CNAME to `cname.vercel-dns.com` or as shown in Vercel **Domains**) to this project. The extension production build uses **`https://api.devlynx.ai`**.
 
 ## 5. Verify
 
-- `GET https://<your-domain>/health` → JSON with `"ok": true`, `"runtime": "vercel"`, `"blobStorage": true` once Blob is configured.
+- `GET https://<your-domain>/health` → JSON with `"ok": true`, `"runtime": "vercel"`, `"blobStorage": true` once Blob is configured, and **`trialJwt` / `trialPersistence`** when trial signing is configured.
 - **Limits:** Serverless has body-size and duration limits; AI routes may need **Pro** for longer **`maxDuration`** (see `vercel.json`).
 
 ## 6. Railway vs Vercel

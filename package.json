@@ -13,7 +13,8 @@
     "store-ready": "npm run build:prod && node scripts/store-ready.js",
     "store-thumbnail:square": "node scripts/square-store-thumbnail.js",
     "store-promos:resize": "node scripts/resize-store-promos.js",
-    "store-promos:from-screenshot": "node scripts/build-promos-from-screenshot.js"
+    "store-promos:from-screenshot": "node scripts/build-promos-from-screenshot.js",
+    "gen:license-jwt-keys": "node scripts/gen-license-jwt-keys.js"
   },
   "devDependencies": {
     "archiver": "^7.0.1",

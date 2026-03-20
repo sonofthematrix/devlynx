@@ -50,13 +50,6 @@ function serverOfflineMsg() {
   return "DevLynx feed server isn't running. In the feed-server folder run npm start.";
 }
 
-function trialNeedsServerMsg() {
-  return (
-    serverOfflineMsg() +
-    ' Free trial needs the feed server for signed tokens (start the local server or use Pro).'
-  );
-}
-
 /** User’s OpenAI key — never sent to the DevLynx feed server, only to api.openai.com. */
 const USER_OPENAI_KEY = 'devlynx_openai_api_key';
 const OPENAI_CHAT_COMPLETIONS = 'https://api.openai.com/v1/chat/completions';
@@ -373,11 +366,19 @@ async function fetchTrialTokenFromServer() {
   return false;
 }
 
-/** After successful trial AI: server decrements and returns fresh JWT. */
+/** After successful trial AI: server decrements via POST /trial-consume, or client-only decrement if no trial JWT. */
 async function postTrialConsumeAfterAi() {
-  const r = await storageGetLocal([TRIAL_JWT_STORAGE_KEY]);
+  const r = await storageGetLocal([TRIAL_JWT_STORAGE_KEY, TRIAL_STORAGE_KEY]);
   const tok = r[TRIAL_JWT_STORAGE_KEY] && String(r[TRIAL_JWT_STORAGE_KEY]).trim();
-  if (!tok) return;
+  if (!tok) {
+    const rem = typeof r[TRIAL_STORAGE_KEY] === 'number' ? r[TRIAL_STORAGE_KEY] : 0;
+    if (rem > 0) {
+      await new Promise((resolve) => {
+        chrome.storage.local.set({ [TRIAL_STORAGE_KEY]: rem - 1 }, resolve);
+      });
+    }
+    return;
+  }
   const body = JSON.stringify({ token: tok });
   for (const url of licenseApiUrlCandidates('/trial-consume')) {
     try {
@@ -480,7 +481,14 @@ async function assertAiEntitled() {
         : { ok: false };
     if (!vTrial.ok || !vTrial.payload || vTrial.payload.trial_remaining <= 0) {
       const got = await fetchTrialTokenFromServer();
-      if (!got) return trialNeedsServerMsg();
+      if (!got) {
+        const rFb = await storageGetLocal([TRIAL_STORAGE_KEY]);
+        const remFb = typeof rFb[TRIAL_STORAGE_KEY] === 'number' ? rFb[TRIAL_STORAGE_KEY] : 0;
+        if (remFb > 0) {
+          return null;
+        }
+        return TRIAL_ENDED_CONTEXT_MSG;
+      }
       rTrial = await storageGetLocal([TRIAL_JWT_STORAGE_KEY]);
       trialTok = rTrial[TRIAL_JWT_STORAGE_KEY] && String(rTrial[TRIAL_JWT_STORAGE_KEY]).trim();
       vTrial =

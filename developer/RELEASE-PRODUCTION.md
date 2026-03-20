@@ -7,7 +7,7 @@
 **Railway / Docker**
 
 1. GitHub repo connected → **Root directory:** `feed-server` (Dockerfile deploy).
-2. **Variables:** `OPENAI_API_KEY`, `GUMROAD_PRODUCT_ID` (if using Gumroad), optional `OPENAI_MODEL`, `DEV_CODES`.
+2. **Variables:** `OPENAI_API_KEY`, `GUMROAD_PRODUCT_ID` (if using Gumroad), optional `OPENAI_MODEL`, `DEV_CODES`, optional **`LICENSE_JWT_PRIVATE_KEY`** ( **`GET /trial-token`** / **`POST /trial-consume`** ; pair with public PEM in **`src/license-jwt-public.js`** — **[developer/LICENSE-JWT-KEYS.md](LICENSE-JWT-KEYS.md)** ), optional **`DEVLYNX_TRIAL_LIMIT`**. On Vercel, also **`BLOB_READ_WRITE_TOKEN`** for screenshot + persisted trial store.
 3. **Public HTTPS URL** must match the extension build: default **`https://api.devlynx.ai`** (custom domain on Railway) or change `DEVLYNX_API_BASE_REPLACE` in `scripts/build.js` and rebuild.
 4. Verify: `GET https://<your-host>/health` → `"ok": true`.
 
@@ -37,6 +37,7 @@ npm run release
 ```
 
 - Output: **`release/devlens-extension.zip`** — points at **production API** (`build:prod`).
+- If you use server-signed trials, embed the matching **public** key in **`src/license-jwt-public.js`** before `npm run release`.
 - **Chrome Web Store:** upload that zip only.
 - **Sideload test:** Extensions → Developer mode → **Load unpacked** → select **`dist/`** after `npm run release` (or run `npm run build:prod` then load `dist/`).
 

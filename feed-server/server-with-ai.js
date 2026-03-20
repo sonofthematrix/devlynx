@@ -2,14 +2,16 @@
  * DevLynx AI feed server — OpenAI + HTTP API.
  * Run from feed-server: node server-with-ai.js
  * Railway: OPENAI_API_KEY + PORT.
- * Vercel: OPENAI_API_KEY + BLOB_READ_WRITE_TOKEN (screenshots); see vercel.json + api/server.js.
+ * Vercel: OPENAI_API_KEY + BLOB_READ_WRITE_TOKEN (screenshots); see vercel.json + api/server/[[...slug]].js.
  */
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const http = require('http');
 const https = require('https');
 const licenseJwt = require('./license-jwt');
+const trialStore = require('./trial-store');
 const LICENSE_JWT_ISSUER = licenseJwt.TOKEN_ISSUER;
 const LICENSE_JWT_AUDIENCE = licenseJwt.TOKEN_AUDIENCE;
 
@@ -57,7 +59,43 @@ try {
 if (process.env.PORT) PORT = parseInt(process.env.PORT, 10) || DEFAULT_PORT;
 if (!Number.isFinite(PORT)) PORT = DEFAULT_PORT;
 
+/** PKCS8 PEM for RS256 (trial + optional license JWT). See developer/LICENSE-JWT-KEYS.md */
+function normalizePemEnv(val) {
+  if (!val || typeof val !== 'string') return '';
+  let s = val.trim();
+  if (s.includes('\\n')) s = s.replace(/\\n/g, '\n');
+  return s;
+}
+
+let LICENSE_JWT_PRIVATE_KEY_PEM = normalizePemEnv(process.env.LICENSE_JWT_PRIVATE_KEY || '');
+
+let TRIAL_DEFAULT_LIMIT = parseInt(process.env.DEVLYNX_TRIAL_LIMIT || '20', 10);
+if (!Number.isFinite(TRIAL_DEFAULT_LIMIT) || TRIAL_DEFAULT_LIMIT < 0) TRIAL_DEFAULT_LIMIT = 20;
+TRIAL_DEFAULT_LIMIT = Math.min(TRIAL_DEFAULT_LIMIT, 100000);
+
+function publicPemFromPrivate(privatePem) {
+  return crypto.createPublicKey(privatePem).export({ type: 'spki', format: 'pem' });
+}
+
+function signTrialJwt(deviceId, extensionId, remaining) {
+  return licenseJwt.signTrialToken(LICENSE_JWT_PRIVATE_KEY_PEM, {
+    device_id: deviceId,
+    extension_id: extensionId,
+    trial_remaining: remaining
+  });
+}
+
+function readQueryParam(req, name) {
+  try {
+    const u = new URL(req.url || '/', 'http://feed.local');
+    return (u.searchParams.get(name) || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
 console.log('OpenAI key loaded:', OPENAI_API_KEY ? 'YES' : 'NO');
+console.log('License JWT private key (trial / license signing):', LICENSE_JWT_PRIVATE_KEY_PEM ? 'YES' : 'NO');
 if (!OPENAI_API_KEY) {
   console.warn('WARNING: OPENAI_API_KEY not configured. Set it in feed-server/.env to enable AI.');
 }
@@ -352,17 +390,46 @@ async function feedServerHandler(req, res) {
       ok: true,
       connected: true,
       service: 'devlens-feed',
-      version: '1.1.2',
-      serverVersion: '1.1.2',
+      version: '1.1.3',
+      serverVersion: '1.1.3',
       ai: !!OPENAI_API_KEY,
       apiKeyConfigured: !!OPENAI_API_KEY,
       model: OPENAI_MODEL || 'gpt-4o-mini',
       licenseCheck: !!GUMROAD_PRODUCT_ID,
       licenseJwtIssuer: LICENSE_JWT_ISSUER,
       licenseJwtAudience: LICENSE_JWT_AUDIENCE,
+      trialJwt: !!LICENSE_JWT_PRIVATE_KEY_PEM,
+      trialDefaultLimit: TRIAL_DEFAULT_LIMIT,
+      trialPersistence: trialStore.getTrialPersistenceMode(),
       blobStorage: !!(process.env.BLOB_READ_WRITE_TOKEN || '').trim(),
       runtime: process.env.VERCEL ? 'vercel' : 'node'
     });
+    return;
+  }
+
+  // GET /trial-token?device_id=&extension_id= — server-signed trial JWT (RS256)
+  if (req.method === 'GET' && pathname === '/trial-token') {
+    if (!LICENSE_JWT_PRIVATE_KEY_PEM) {
+      send(res, 200, {
+        ok: false,
+        error: 'Trial signing not configured. Set LICENSE_JWT_PRIVATE_KEY on the feed server (see developer/LICENSE-JWT-KEYS.md).'
+      });
+      return;
+    }
+    const deviceId = readQueryParam(req, 'device_id');
+    const extensionId = readQueryParam(req, 'extension_id');
+    if (!deviceId || !extensionId) {
+      send(res, 200, { ok: false, error: 'Missing device_id or extension_id.' });
+      return;
+    }
+    try {
+      const rem = await trialStore.ensureTrialRemaining(deviceId, extensionId, TRIAL_DEFAULT_LIMIT);
+      const token = signTrialJwt(deviceId, extensionId, rem);
+      send(res, 200, { ok: true, token, trial_remaining: rem });
+    } catch (err) {
+      console.error('trial-token error:', err);
+      send(res, 200, { ok: false, error: err.message || 'trial_token_failed' });
+    }
     return;
   }
 
@@ -419,6 +486,65 @@ async function feedServerHandler(req, res) {
       send(res, 200, { ok: true, valid: true, type: 'gumroad', message: 'License valid.' });
     } else {
       send(res, 200, { ok: false, error: result.error || 'Invalid license.' });
+    }
+    return;
+  }
+
+  // POST /trial-consume — verify trial JWT, decrement authoritative count, return refreshed JWT
+  if (req.method === 'POST' && pathname === '/trial-consume') {
+    if (!LICENSE_JWT_PRIVATE_KEY_PEM) {
+      send(res, 200, {
+        ok: false,
+        error: 'Trial signing not configured. Set LICENSE_JWT_PRIVATE_KEY on the feed server.'
+      });
+      return;
+    }
+    const body = await parseBody(req);
+    const rawTok = body && body.token != null ? String(body.token).trim() : '';
+    if (!rawTok) {
+      send(res, 200, { ok: false, error: 'Missing token.' });
+      return;
+    }
+    let pub;
+    try {
+      pub = publicPemFromPrivate(LICENSE_JWT_PRIVATE_KEY_PEM);
+    } catch (e) {
+      console.error('trial-consume: invalid LICENSE_JWT_PRIVATE_KEY', e.message);
+      send(res, 200, { ok: false, error: 'Server misconfigured: invalid LICENSE_JWT_PRIVATE_KEY.' });
+      return;
+    }
+    const v = licenseJwt.verifyLicenseTokenServer(rawTok, pub, { algorithm: 'RS256' });
+    if (!v.ok || !v.payload) {
+      send(res, 200, { ok: false, error: 'invalid_token', detail: v.error || '' });
+      return;
+    }
+    const pl = v.payload;
+    if (pl.plan !== 'trial') {
+      send(res, 200, { ok: false, error: 'not_trial_token' });
+      return;
+    }
+    const deviceId = String(pl.device_id || '').trim();
+    const extensionId = String(pl.extension_id || '').trim();
+    if (!deviceId || !extensionId) {
+      send(res, 200, { ok: false, error: 'bad_claims' });
+      return;
+    }
+    try {
+      const result = await trialStore.consumeTrial(deviceId, extensionId, pl.trial_remaining);
+      const newTok = signTrialJwt(deviceId, extensionId, result.trial_remaining);
+      if (result.kind === 'empty') {
+        send(res, 200, {
+          ok: false,
+          error: 'trial_exhausted',
+          token: newTok,
+          trial_remaining: 0
+        });
+        return;
+      }
+      send(res, 200, { ok: true, token: newTok, trial_remaining: result.trial_remaining });
+    } catch (err) {
+      console.error('trial-consume error:', err);
+      send(res, 200, { ok: false, error: err.message || 'trial_consume_failed' });
     }
     return;
   }
