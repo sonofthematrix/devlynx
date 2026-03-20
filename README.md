@@ -1,85 +1,214 @@
 # DevLynx AI
 
-AI Developer Assistant for any website. Use your own OpenAI key; everything runs on your machine.
-
-**Freemium:** Free tier includes Dev assistant, AI Mod Generator, and more. **Pro** (paid) unlocks AI Explain Element and Error explainer. See [developer/FREEMIUM.md](developer/FREEMIUM.md) for pricing setup and configuration.
+AI Developer Assistant for any website. The extension can use a **hosted feed API** (OpenAI + license checks on the server) or your **own OpenAI key** (BYOK) for some flows. **Freemium:** free tier includes Dev assistant, AI Mod Generator, and more; **Pro** unlocks Explain Element and Error explainer. See [developer/FREEMIUM.md](developer/FREEMIUM.md).
 
 ---
 
-## Build (production / store upload)
+## Architecture (short)
 
-The extension is built from **source in `src/`** into an obfuscated **`dist/`** and optionally packaged as a zip for the Chrome Web Store.
+| Piece | Role |
+|--------|------|
+| **Chrome extension** (`src/` → `dist/`) | Side panel, API tester, AI tools; talks to the **feed API** URL from `scripts/build.js` (default: **Vercel**). |
+| **Feed server** (`feed-server/`) | Node API: OpenAI, Gumroad verify, trial JWTs, screenshots. Deployed to **Vercel** (serverless) or run locally with `npm start`. |
 
-- **Source:** Edit code in **`src/`** (readable). All JavaScript there is obfuscated only in the build output.
-- **Build:** Run `npm run build` to produce **`dist/`** (obfuscated JS + copied manifest, HTML, CSS, icons).
-- **Store / production zip:** Run **`npm run release`** — runs **`build:prod`** (production API base from `scripts/build.js`, currently **`https://devlynx-black.vercel.app`**) then zips → **`release/devlens-extension.zip`**.
+Default extension builds use **`https://devlynx-black.vercel.app`** as the feed base (see **`HOSTED_FEED_API`** in `scripts/build.js`). Override with **`DEVLYNX_FEED_API`** or use **`npm run build:local-feed`** for **`http://localhost:2847`**.
 
-**Commands:**
+---
+
+## 1. Deploy feed server on Vercel (step by step)
+
+Do this **once** per project (or when you add a new environment).
+
+### 1.1 Create the Vercel project
+
+1. Push this repo to **GitHub** (no secrets in git — use `.env` / `.env.local` only on your machine; see `.gitignore`).
+2. Open [Vercel Dashboard](https://vercel.com) → **Add New** → **Project** → import the repo.
+3. **Root Directory:** set to **`feed-server`** (required).
+4. **Framework Preset:** **Other**.
+5. **Build Command:** `npm run vercel-build` (or leave empty if `vercel.json` already defines it).
+6. **Output Directory:** **`public`** (must match `feed-server/vercel.json`).
+7. Deploy. If the build fails, confirm `feed-server/public/` exists and `package.json` has `vercel-build`.
+
+### 1.2 Environment variables
+
+In **Project → Settings → Environment Variables** (Production + Preview as needed):
+
+| Variable | Required | Notes |
+|----------|----------|--------|
+| `OPENAI_API_KEY` | For AI on server | Server-side model calls |
+| `BLOB_READ_WRITE_TOKEN` | Strongly recommended | **Storage → Blob**; screenshots + persistent trial store on Vercel |
+| `GUMROAD_PRODUCT_ID` | If you use Gumroad | License verification |
+| `LICENSE_JWT_PRIVATE_KEY` | Optional | **`/trial-token`** / **`/trial-consume`** — pair with public PEM in `src/license-jwt-public.js` ([developer/LICENSE-JWT-KEYS.md](developer/LICENSE-JWT-KEYS.md)) |
+| `OPENAI_MODEL` | Optional | Default `gpt-4o-mini` |
+| `DEV_CODES` | Optional | Server-only bypass keys |
+| `DEVLYNX_TRIAL_LIMIT` | Optional | Default `20` |
+
+Redeploy after adding variables.
+
+### 1.3 Blob store (screenshots + trial persistence)
+
+1. **Storage** → **Create** → **Blob** → attach to this project.
+2. Confirm **`BLOB_READ_WRITE_TOKEN`** appears in env; redeploy if needed.
+
+### 1.4 Custom domain (optional)
+
+In **Settings → Domains**, add e.g. **`api.devlynx.ai`** and set DNS per Vercel’s instructions.
+
+If the URL changes, update **`HOSTED_FEED_API`** in **`scripts/build.js`** and add the same origin to **`src/manifest.json`** → `host_permissions`, then rebuild the extension.
+
+### 1.5 Verify
+
+In a browser open:
+
+`https://<your-deployment>/health`
+
+You should see JSON with `"ok": true`, `"runtime": "vercel"`, and ideally `"blobStorage": true`.
+
+More detail: [developer/VERCEL.md](developer/VERCEL.md).
+
+### 1.6 CLI deploy (optional)
+
+From the **`feed-server`** folder (logged in with `vercel login`):
 
 ```bash
-npm install           # once: install build tools
-npm run build         # src/ → dist/ — hosted feed API (default: Vercel; see scripts/build.js)
-npm run build:prod    # src/ → dist/ — same hosted API + production license-jwt strip
-npm run build:local-feed   # dist/ uses http://localhost:2847 (run feed-server locally)
-npm run build:dev:local   # readable dist + localhost feed (for debugging feed-server)
-npm run release       # build:prod + zip → release/devlens-extension.zip (Chrome Web Store)
-npm run package       # dev build + zip (localhost feed server)
+cd feed-server
+npx vercel deploy --prod
 ```
-
-**Structure:**
-
-- `src/` – Source extension (manifest, JS, HTML, CSS, icons). Keep this readable.
-- `dist/` – Build output; load this folder as “Load unpacked” to test the production build.
-- `release/devlens-extension.zip` – Zip of `dist/` contents, ready for Chrome Web Store.
-
-Build uses [javascript-obfuscator](https://github.com/javascript-obfuscator/javascript-obfuscator) with options that stay compatible with Chrome extension Manifest V3 (no eval in the service worker).
 
 ---
 
-## Quick start
+## 2. Build & load the Chrome extension locally (step by step)
 
-1. **Extension**  
-   **Chrome, Edge, Opera, Brave, Vivaldi:** open the browser’s extensions page (`chrome://extensions`, `edge://extensions`, `opera://extensions`, etc.) → turn on **Developer mode** → **Load unpacked** → select the **`src`** or **`dist`** folder (the one that contains `manifest.json`; do **not** select the project root).  
-   In **Opera**, pin the extension via the Extensions (cube) menu so the icon appears in the toolbar. See **developer/BROWSERS.md** for per-browser steps.
+### 2.1 One-time setup
 
-2. **API key**  
-   In the **feed-server** folder: copy `.env.example` to `.env` and set  
-   `OPENAI_API_KEY=sk-your-key`
+From the **repository root** (`devlens-saas/`, not `feed-server/`):
 
-3. **Feed API (optional locally)**  
-   **Default:** Dev and production builds use the **hosted** feed server (**`https://devlynx-black.vercel.app`**, configurable in **`scripts/build.js`** / `DEVLYNX_FEED_API`). No **`npm start`** required for the extension to connect.  
-   **Local feed server only if you need it:** `npm run build:local-feed` (or `DEVLYNX_FEED_LOCAL=1`) then run **`npm start`** in **feed-server**.
+```bash
+npm install
+```
 
-**Toolbar icon:** Extensions menu (puzzle/cube) → find DevLynx AI → click **pin**.
+### 2.2 Production-oriented build (hosted API, obfuscated)
 
-**Disconnected or “refused to connect”?**  
-- Confirm **`https://devlynx-black.vercel.app/health`** loads in a browser.  
-- If you use **`build:local-feed`**: start **`npm start`** in **feed-server**.  
-- Reload the extension after rebuilding; use **`dist`** (or **`src`** now defaults to hosted API when the placeholder is still present).  
-2. Extensions → DevLynx AI → **reload** after code changes.  
-3. Click status in the panel to retry.
+Matches the store pipeline; points at **`scripts/build.js`** → default Vercel URL.
 
-**Chrome Web Store:** Upload only **`release/devlens-extension.zip`** (create with **`npm run release`** — production API). See **PROJECT-STRUCTURE.md**, **developer/RELEASE-PRODUCTION.md**, and **developer/VERCEL.md** (Vercel + Blob screenshots).
+```bash
+npm run build:prod
+```
 
-**Store screenshots & promo images** (marquee, thumbnail, tiles): put captures in **`assets/screenshot-sidepanel.png`** (and optionally **`assets/screenshot-contextmenu.png`**), then run **`npm run store-promos:from-screenshot`**. PNG’s are written to **`assets/store-mockups/`** — see **developer/PUBLISHING.md** §4.
+Output: **`dist/`** (load this folder in Chrome).
+
+### 2.3 Load unpacked in Chrome
+
+1. Open **`chrome://extensions`** (Edge: **`edge://extensions`**, etc.).
+2. Turn **Developer mode** **ON**.
+3. Click **Load unpacked**.
+4. Select the **`dist`** folder (must contain **`manifest.json`** — do **not** choose the repo root).
+
+### 2.4 After code changes
+
+1. Run **`npm run build`** or **`npm run build:prod`** again.
+2. On **`chrome://extensions`**, click **Reload** on DevLynx AI.
+
+### 2.5 Optional: load readable source (no obfuscation)
+
+```bash
+npm run build:dev
+```
+
+Then **Load unpacked** → **`dist`**. Same default hosted API unless you use **`npm run build:dev:local`**.
+
+### 2.6 Optional: point extension at local feed only
+
+```bash
+npm run build:local-feed
+# or: npm run build:dev:local   # readable + localhost
+```
+
+Start the server:
+
+```bash
+cd feed-server
+npm install
+npm start
+```
+
+Per-browser notes: [developer/BROWSERS.md](developer/BROWSERS.md).
 
 ---
 
-## License verification (Pro)
+## 3. Store release (production zip)
 
-The extension calls **`POST /verify-license`** on the configured feed API (default **hosted** URL in **`scripts/build.js`**, or **`http://localhost:2847`** with **`build:local-feed`**) with a `license_key` in the request body. Only the **feed-server** decides if a license is valid; the extension never contains dev codes or bypass logic.
+From repo root:
 
-**1. Gumroad (paid users)**  
-Set **`GUMROAD_PRODUCT_ID`** in **feed-server/.env**. If the key is not a dev code (see below), the server verifies it with Gumroad’s API (`POST https://api.gumroad.com/v2/licenses/verify`). On success it returns `{ "valid": true, "ok": true, "type": "gumroad" }`.
-
-**2. Developer / friend codes**  
-Add comma-separated codes in **feed-server/.env**:
-
-```env
-DEV_CODES=DEVLENS-FRIEND-001,DEVLENS-FRIEND-002
+```bash
+npm run release
 ```
 
-If the submitted license key matches one of these, the server returns `{ "valid": true, "ok": true, "type": "dev" }`. Dev codes exist **only on the server** and are never shipped in the extension.
+· Creates **`release/devlens-extension.zip`** ( **`build:prod`** + zip).  
+· Upload **only** that zip to the Chrome Web Store.  
+· Bump **`version`** in **`src/manifest.json`** before submission, then run **`npm run release`** again.
 
-**3. Developer bypass (local development)**  
-If the request comes from **localhost** (127.0.0.1) and **no license key** is sent, the server returns `{ "valid": true, "ok": true, "type": "developer" }`. So you can leave the license field empty in the Options page, click **Verify with server**, and get Pro while developing. This only works when the extension talks to your local server from the same machine.
+Full checklist: [developer/RELEASE-PRODUCTION.md](developer/RELEASE-PRODUCTION.md).
+
+---
+
+## 4. Build commands (reference)
+
+```bash
+npm install                 # once
+npm run build               # dist/ — default hosted API, obfuscated
+npm run build:prod          # dist/ — hosted API + production JWT dev-secret strip
+npm run build:local-feed    # dist/ — http://localhost:2847
+npm run build:dev           # dist/ readable, hosted API, DEBUG logs
+npm run build:dev:local     # dist/ readable, localhost feed
+npm run release             # build:prod + release/devlens-extension.zip
+npm run package             # build + zip (same default API as npm run build)
+```
+
+**Layout:**
+
+- **`src/`** — editable extension source.  
+- **`dist/`** — build output; use for **Load unpacked** and store packaging.  
+- **`feed-server/`** — Node feed API; deploy root = this folder on Vercel.
+
+Obfuscation: [javascript-obfuscator](https://github.com/javascript-obfuscator/javascript-obfuscator), MV3-safe (no `eval` in the service worker).
+
+---
+
+## 5. Quick troubleshooting
+
+| Issue | What to do |
+|-------|------------|
+| Panel **Disconnected** / **ERR_CONNECTION_REFUSED** | Open **`https://devlynx-black.vercel.app/health`** (or your `DEVLYNX_FEED_API`). If OK, reload extension; ensure you loaded **`dist`** after a build. If you use **local-feed**, run **`npm start`** in **feed-server**. |
+| Push blocked (GitHub secrets) | Never commit **`.env`**, **`.env.local`**, or keys. See `.gitignore`. |
+| Wrong API host | Edit **`HOSTED_FEED_API`** / **`DEVLYNX_FEED_API`** in **`scripts/build.js`**, update **`host_permissions`** in **`src/manifest.json`**, rebuild. |
+
+**Toolbar:** Extensions (puzzle) → **DevLynx AI** → **Pin**.
+
+---
+
+## 6. License verification (Pro)
+
+The extension calls **`POST /verify-license`** on the configured feed API with a `license_key`. Only the server validates (Gumroad, **`DEV_CODES`**, etc.). Details: [developer/FREEMIUM.md](developer/FREEMIUM.md).
+
+**Gumroad:** set **`GUMROAD_PRODUCT_ID`** in the **Vercel** env (or **`feed-server/.env`** locally).
+
+**Dev codes (server-only):** in env: `DEV_CODES=key1,key2`
+
+**Local dev bypass:** requests from **localhost** with **no** license key return valid for local server only.
+
+---
+
+## 7. Store assets
+
+Screenshots / promos: **`assets/screenshot-sidepanel.png`**, then **`npm run store-promos:from-screenshot`** → **`assets/store-mockups/`**. See [developer/PUBLISHING.md](developer/PUBLISHING.md) §4.
+
+---
+
+## More docs
+
+- [PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md) — repo layout  
+- [PRODUCT-SUMMARY.md](PRODUCT-SUMMARY.md) — product overview  
+- [developer/VERCEL.md](developer/VERCEL.md) — Vercel deep dive  
+- [developer/RELEASE-PRODUCTION.md](developer/RELEASE-PRODUCTION.md) — production checklist  
+- [src/README.md](src/README.md) — extension-focused readme  
