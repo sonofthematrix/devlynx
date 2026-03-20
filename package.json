@@ -1,0 +1,17 @@
+{
+  "name": "feed-server",
+  "version": "1.0.0",
+  "description": "DevLynx AI feed server (Railway + local)",
+  "main": "server-with-ai.js",
+  "scripts": {
+    "start": "node server-with-ai.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "openai": "^4.20.0"
+  }
+}
