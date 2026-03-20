@@ -1,0 +1,17 @@
+node_modules/
+
+release/*.zip
+*.zip
+
+# Secrets
+.env
+feed-server/.env
+
+# Local signing / packaging (do not publish)
+*.pem
+*.crx
+
+# License / trial storage (local server only)
+feed-server/licenses.json
+feed-server/licenses.json.tmp
+feed-server/trials.json

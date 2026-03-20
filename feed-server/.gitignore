@@ -1,0 +1,10 @@
+node_modules
+.env
+screenshots
+licenses.json
+licenses.json.tmp
+trials.json
+.git
+.DS_Store
+
+.vercel

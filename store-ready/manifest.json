@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "DevLynx AI: Inspect, Debug & Modify Websites",
+  "version": "1.1.2",
+  "description": "AI dev assistant: inspect element, DOM inspector, web debugging, modify website, API tester, frontend debugging, Error Explainer & Explain Element.",
+  "action": {
+    "default_popup": "sidepanel/panel.html",
+    "default_title": "DevLynx AI – Web debugging & AI tools",
+    "default_icon": {
+      "16": "icons/icon128.png",
+      "32": "icons/icon128.png",
+      "48": "icons/icon128.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon128.png",
+    "32": "icons/icon128.png",
+    "48": "icons/icon128.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["tabs", "activeTab", "storage", "downloads", "contextMenus", "scripting", "sidePanel"],
+  "host_permissions": [
+    "<all_urls>",
+    "http://localhost:2847/*",
+    "http://127.0.0.1:2847/*",
+    "https://api.openai.com/*",
+    "https://api.devlynx.ai/*"
+  ],
+  "side_panel": {
+    "default_path": "sidepanel/panel.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "options_ui": {
+    "page": "options/options.html"
+  },
+  "devtools_page": "devtools/devtools.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": [
+        "https://start.opera.com/*",
+        "https://*.opera.com/start*",
+        "https://newtab.opera.com/*",
+        "http://start.opera.com/*",
+        "http://newtab.opera.com/*",
+        "https://addons.opera.com/*"
+      ],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

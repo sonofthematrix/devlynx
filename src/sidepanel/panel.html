@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevLynx AI – AI Developer Assistant</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div class="panel">
+    <header class="header">
+      <h1><span class="glow">DevLynx AI</span></h1>
+      <p class="header-version" id="header-version" aria-label="Version"></p>
+      <p class="tagline">AI Developer Assistant for Any Website</p>
+      <p id="feed-server-status" class="feed-server-status" aria-live="polite" title="Click to retry connection"><span class="badge">checking…</span></p>
+      <p id="disconnect-hint" class="disconnect-hint" hidden>Checking connection…</p>
+      <div id="status-bar" class="status-bar" aria-live="polite">
+        <span id="status-bar-server" class="status-bar-item">● DevLynx Server: …</span>
+        <span id="status-bar-openai" class="status-bar-item">● OpenAI: …</span>
+        <span id="status-bar-plan" class="status-bar-item">● Plan: …</span>
+        <span id="status-bar-license-email" class="status-bar-item status-license-email" hidden></span>
+      </div>
+    </header>
+
+    <div class="group-title">1. AI Assistant</div>
+
+    <section class="block highlight-block" style="position: relative; overflow: hidden;">
+      <h2>✨ AI Explain Element <span class="pro-badge">PRO</span></h2>
+      <p class="hint">Click Try it! then click an element on the page to get an AI explanation.</p>
+      <div class="explain-mode-row">
+        <span class="explain-mode-label">Explain:</span>
+        <div class="explain-mode-toggle" role="group" aria-label="Explanation style">
+          <button type="button" class="explain-mode-btn active" data-mode="simple" id="explain-mode-simple">Simple</button>
+          <button type="button" class="explain-mode-btn" data-mode="technical" id="explain-mode-technical">Technical</button>
+        </div>
+      </div>
+      <div class="quick-row">
+        <button type="button" id="start-explain-inspect" class="btn btn-primary try-it-btn" data-requires-user-openai>
+          <span>Try it!</span> (Start selecting)
+        </button>
+        <button type="button" id="stop-explain-inspect" class="btn btn-secondary btn-stop">Stop</button>
+      </div>
+      <p id="explain-element-status" class="status"></p>
+      <div class="answer-block-wrap">
+        <div class="answer-block-actions">
+          <button type="button" class="btn-copy-answer" data-copy-from="explain-element-answer" title="Copy to clipboard">Copy</button>
+          <button type="button" class="btn-clear-answer" data-clear-from="explain-element-answer" title="Clear result">Clear</button>
+        </div>
+        <div id="explain-element-answer" class="dev-answer empty"></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>AI Dev Assistant</h2>
+      <p class="hint">AI only for dev help: code, extensions, debugging. Ask your question below.</p>
+      <label for="dev-question">Question</label>
+      <textarea id="dev-question" rows="3" placeholder="e.g. How do I add a content script in Manifest V3?"></textarea>
+      <div class="row dev-assistant-actions">
+        <button type="button" id="dev-ask" class="btn btn-primary full" data-requires-user-openai>Ask AI</button>
+      </div>
+      <p id="dev-status" class="status"></p>
+      <div class="answer-block-wrap">
+        <div class="answer-block-actions">
+          <button type="button" class="btn-copy-answer" data-copy-from="dev-answer" title="Copy to clipboard">Copy</button>
+          <button type="button" class="btn-clear-answer" data-clear-from="dev-answer" title="Clear result">Clear</button>
+        </div>
+        <div id="dev-answer" class="dev-answer" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="block highlight-block">
+      <div class="row" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <h2 style="margin: 0;">Error explainer <span class="pro-badge">PRO</span></h2>
+        <button type="button" id="get-page-errors" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" data-requires-user-openai>Get Errors</button>
+      </div>
+      <p class="hint">Paste a console error below, or click Get Errors to capture from the page.</p>
+      <textarea id="error-explainer-input" rows="3" placeholder="Paste error or stack trace…"></textarea>
+      <button type="button" id="error-explainer-btn" class="btn btn-secondary full" style="margin-top: 8px;" data-requires-user-openai>Explain error</button>
+      <p id="error-explainer-status" class="status"></p>
+      <div class="answer-block-wrap">
+        <div class="answer-block-actions">
+          <button type="button" class="btn-copy-answer" data-copy-from="error-explainer-answer" title="Copy to clipboard">Copy</button>
+          <button type="button" class="btn-clear-answer" data-clear-from="error-explainer-answer" title="Clear result">Clear</button>
+        </div>
+        <div id="error-explainer-answer" class="dev-answer"></div>
+      </div>
+    </section>
+
+    <section class="block" id="last-ai-result-block">
+      <h2>Last AI result (Context Menu)</h2>
+      <p class="hint">Select text → right‑click → DevLynx AI → Ask AI / Generate code. Result appears here.</p>
+      <div class="answer-block-wrap">
+        <div class="answer-block-actions">
+          <button type="button" class="btn-copy-answer" data-copy-from="last-ai-result" title="Copy to clipboard">Copy</button>
+          <button type="button" class="btn-clear-answer" data-clear-from="last-ai-result" title="Clear result">Clear</button>
+        </div>
+        <div id="last-ai-result" class="dev-answer empty"></div>
+      </div>
+    </section>
+
+    <div class="group-title">2. Page Tools</div>
+
+    <section class="block">
+      <h2>AI Mod Generator</h2>
+      <p class="hint">Describe what to change → AI generates CSS/JS for the current page.</p>
+      <label for="mod-prompt-input">Describe what to change</label>
+      <textarea id="mod-prompt-input" rows="2" placeholder="e.g. Make the header blue and hide the footer"></textarea>
+      <button type="button" id="generate-mod-btn" class="btn btn-primary full" data-requires-user-openai>Generate mod (AI)</button>
+      <p id="generate-mod-status" class="status"></p>
+      
+      <div class="row" style="margin-top: 12px;">
+        <button type="button" id="reset-page-mods" class="btn btn-secondary full" title="Remove all AI mods for this site">Reset Site (Undo)</button>
+      </div>
+      <p id="custom-css-status" class="status"></p>
+    </section>
+
+    <div class="group-title">3. Developer Tools</div>
+
+    <section class="block">
+      <h2>API & Environment</h2>
+      <p class="hint api-tester-tagline">Advanced API testing — CORS-free requests. AI features use <strong>your</strong> OpenAI key below (billing to your OpenAI account).</p>
+
+      <div class="openai-key-section">
+        <label for="openai-api-key-input">OpenAI API Key</label>
+        <input
+          id="openai-api-key-input"
+          type="password"
+          placeholder="Paste your OpenAI API key"
+          autocomplete="off"
+          aria-describedby="openai-key-hint"
+        />
+        <p id="openai-key-hint" class="hint openai-key-hint">
+          Get your API key from
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>.
+          Your key is stored only in this browser — it is never sent to the DevLynx server.
+        </p>
+        <div class="quick-row" style="margin-top: 8px;">
+          <button type="button" id="save-openai-key-btn" class="btn btn-primary">Save API Key</button>
+          <button type="button" id="clear-openai-key-btn" class="btn btn-secondary">Clear Key</button>
+          <a href="https://platform.openai.com/api-keys" class="openai-dashboard-link" target="_blank" rel="noopener noreferrer">OpenAI dashboard</a>
+        </div>
+        <div id="openai-key-status" class="openai-key-status" role="status" aria-live="polite"></div>
+      </div>
+
+      <button type="button" id="open-api-tester" class="btn btn-secondary full">Open API tester</button>
+      
+      <div class="quick-row" style="margin-top: 12px;">
+        <button id="screenshot-browser" class="btn btn-secondary full">Screenshot</button>
+      </div>
+      <p id="screenshot-status" class="status"></p>
+    </section>
+
+    <!-- Slide-over API Tester -->
+    <div id="api-tester-slide" class="slide-over">
+      <header class="slide-header">
+        <button type="button" id="close-api-tester" class="btn-icon" title="Close">←</button>
+        <div class="slide-header-titles">
+          <h2>API Tester</h2>
+          <p class="slide-header-sub">Advanced API testing</p>
+        </div>
+      </header>
+      <div class="slide-content">
+        <label for="api-url">Endpoint</label>
+        <input type="url" id="api-url" placeholder="https://api.example.com" value="https://jsonplaceholder.typicode.com/posts/1" />
+        <div class="row">
+          <select id="api-method">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+          <button id="call-api" class="btn-primary">CALL</button>
+        </div>
+        <div class="row" style="margin-top: 8px;">
+          <button id="generate-code" class="btn-secondary" style="flex:1" disabled data-requires-user-openai>Gen Code</button>
+          <button id="explain-endpoint" class="btn-secondary" style="flex:1" disabled data-requires-user-openai>Explain</button>
+        </div>
+        <p id="api-status" class="status"></p>
+        <pre id="api-response"></pre>
+        <p id="api-ai-status" class="hint"></p>
+        <div class="answer-block-actions" style="margin-top:6px">
+          <button type="button" class="btn-copy-answer" data-copy-from="api-ai-response" title="Copy to clipboard">Copy</button>
+          <button type="button" class="btn-clear-answer" data-clear-from="api-ai-response" title="Clear result">Clear</button>
+        </div>
+        <pre id="api-ai-response" class="explain-response"></pre>
+      </div>
+    </div>
+
+    <!-- Upgrade modal (trial ended / gated AI) -->
+    <div id="upgrade-modal" class="upgrade-modal" role="dialog" aria-labelledby="upgrade-modal-title" aria-modal="true" aria-hidden="true">
+      <div class="upgrade-modal-backdrop"></div>
+      <div class="upgrade-modal-content">
+        <h2 id="upgrade-modal-title" class="upgrade-modal-title">Your free AI trial has ended</h2>
+        <p class="upgrade-modal-text">Upgrade to DevLynx Pro</p>
+        <p class="upgrade-modal-price-line">$9.99 lifetime</p>
+        <div class="upgrade-modal-actions">
+          <div class="upgrade-modal-actions-row">
+            <button type="button" id="upgrade-modal-btn" class="btn btn-primary btn-cta" data-upgrade-anchor>Upgrade</button>
+            <button type="button" id="upgrade-modal-activate-license" class="btn btn-secondary btn-cta" data-upgrade-anchor>Activate License</button>
+          </div>
+          <button type="button" id="upgrade-modal-close" class="btn btn-secondary upgrade-modal-dismiss">Maybe later</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- API key not configured (soft-block AI features) -->
+    <div id="api-key-modal" class="upgrade-modal" role="dialog" aria-labelledby="api-key-modal-title" aria-modal="true" aria-hidden="true">
+      <div class="upgrade-modal-backdrop"></div>
+      <div class="upgrade-modal-content">
+        <h2 id="api-key-modal-title" class="upgrade-modal-title">OpenAI API key needed</h2>
+        <p class="upgrade-modal-text">Please add your OpenAI API key under <strong>API &amp; Environment</strong> in this panel. Your key stays in the browser and is never sent to the DevLynx server.</p>
+        <div class="upgrade-modal-actions">
+          <button type="button" id="api-key-modal-close" class="btn btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="panel-footer">
+      <span id="panel-version" class="panel-version">DevLynx v1.1.2</span>
+      <div id="chrome-store-rate-banner" class="chrome-store-rate-banner" hidden role="region" aria-label="Rate on Chrome Web Store">
+        <p class="chrome-store-rate-text">Enjoying DevLynx AI? A review helps others find us.</p>
+        <button type="button" id="chrome-store-rate-btn" class="btn btn-secondary btn-rate-store">⭐ Rate DevLynx AI on Chrome Web Store</button>
+        <button type="button" id="chrome-store-rate-dismiss" class="btn-link chrome-store-rate-dismiss">Maybe later</button>
+      </div>
+      <div class="upgrade-box" data-upgrade-link>
+        <h3 class="upgrade-box-title">DevLynx Pro</h3>
+        <p class="upgrade-sub">$9.99 one-time purchase · Lifetime updates</p>
+        <div class="upgrade-actions">
+          <button type="button" id="buy-pro-btn" class="btn btn-primary btn-cta primary-upgrade" data-upgrade-anchor>Buy DevLynx Pro — $9.99</button>
+          <button type="button" id="activate-license-toggle" class="btn btn-secondary secondary-upgrade" aria-expanded="false" aria-controls="license-panel" data-upgrade-anchor>
+            Activate License
+          </button>
+        </div>
+        <div id="license-panel" class="license-panel" aria-hidden="true">
+          <input
+            id="license-key-input"
+            type="text"
+            placeholder="Paste your Gumroad license key"
+            autocomplete="off"
+            aria-label="Gumroad license key"
+          />
+          <button type="button" id="verify-license-btn" class="btn btn-primary license-verify-btn">Verify License</button>
+          <div id="license-status" class="license-inline-status" role="status" aria-live="polite"></div>
+        </div>
+        <p id="trial-status" class="trial-status" aria-live="polite" hidden></p>
+      </div>
+    </footer>
+  </div>
+  <script src="../license-jwt-public.js"></script>
+  <script src="../shared/validate-license-token.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

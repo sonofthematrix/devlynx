@@ -1,0 +1,29 @@
+{
+  "name": "devlens-saas",
+  "version": "1.1.2",
+  "description": "DevLynx AI – Chrome extension and feed server",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:prod": "node scripts/build.js --production",
+    "build:dev": "node scripts/build.js --no-obfuscate",
+    "package": "npm run build && node scripts/package.js",
+    "package:prod": "npm run build:prod && node scripts/package.js",
+    "release": "npm run package:prod",
+    "store-ready": "npm run build:prod && node scripts/store-ready.js",
+    "store-thumbnail:square": "node scripts/square-store-thumbnail.js",
+    "store-promos:resize": "node scripts/resize-store-promos.js",
+    "store-promos:from-screenshot": "node scripts/build-promos-from-screenshot.js"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1",
+    "javascript-obfuscator": "^4.1.1",
+    "sharp": "^0.34.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3"
+  }
+}

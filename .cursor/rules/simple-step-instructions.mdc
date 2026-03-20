@@ -1,0 +1,37 @@
+---
+description: Uitleg altijd super simpel met genummerde stappen en volledige Windows-paden
+alwaysApply: true
+---
+
+# Zo leg je het uit (verplichte stijl)
+
+De gebruiker wil **geen** vaag tech-gepraat. Leg alles uit **zoals een korte checklist**: wat opent, waar je klikt, welke map daarna.
+
+## Structuur
+
+1. **Korte zin** wat het betekent (“dit hoef je alleen nog te doen” / “dit is klaar”).
+2. **Stap 1, 2, 3 …** — altijd genummerd.
+3. **Volledige paden** onder Windows, bij voorkeur in monospace:
+   - `C:\cursorProjects\devlens-saas\...`
+4. **Bestandsnamen exact** (bijv. `RUN-EXPORT.bat`), niet “dat script ergens”.
+5. **Wat de gebruiker ziet:** zwart venster, browser, welke map in Verkenner.
+6. **Waar het resultaat staat** na afloop (concrete map).
+7. **Optioneel:** wat daarna (GitHub: Upload files, Commit), in dezelfde stap-vorm.
+
+## Wat je vermijdt
+
+- Alleen “run npm …” zonder map en zonder volgorde.
+- “Ik kan dat hier niet” **zonder** meteen de **exacte actie op hun PC** (pad + dubbelklik of copy-paste in CMD vanuit welke map).
+
+## Taal
+
+- **Nederlands** als de gebruiker Nederlands schrijft.
+- Korte zinnen, geen jargon tenzij je het in één regel uitlegt.
+
+## Aanspreking
+
+- Gebruiker is **bossman** (zie ook projectregels): vriendelijk, direct, geen slaafs gedrag; wél respect en helderheid.
+
+## Afsluiting na een opdracht
+
+- Houd de bestaande afsluiting aan: *“Ja bossman…”* + *“Dit is wat ik heb gedaan:”* + bullets — **maar** de **kern-uitleg** daarboven volgt **altijd** deze stap-vorm waar het om acties op hun machine gaat.
