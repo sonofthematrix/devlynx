@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node scripts/build.js",
     "build:prod": "node scripts/build.js --production",
+    "build:local-feed": "node scripts/build.js --local-feed",
     "build:dev": "node scripts/build.js --no-obfuscate",
+    "build:dev:local": "node scripts/build.js --no-obfuscate --local-feed",
     "package": "npm run build && node scripts/package.js",
     "package:prod": "npm run build:prod && node scripts/package.js",
     "release": "npm run package:prod",

@@ -8,7 +8,7 @@ Single reference for what the product is, how it’s built, and how the repo is 
 
 **DevLens AI** is a **Chrome (and Chromium) extension** that acts as an **AI developer assistant** on any website.
 
-- **For users:** Install the extension, run a small **local server** (feed-server) with their own **OpenAI API key**, then use the extension to explain elements, debug errors, test APIs, generate page mods, and ask dev questions—all in the browser.
+- **For users:** Install the extension (default build talks to the **hosted** feed API on Vercel). They can add their **OpenAI API key** in the extension for BYOK flows; optional **local feed-server** is for advanced/self-hosted setups.
 - **Model:** **Freemium.** Free: Dev assistant, AI Mod Generator, API Tester, Screenshot, context menu. **Pro** (Gumroad license): AI Explain Element, Error explainer.
 - **Privacy:** No telemetry. AI calls go from the user’s machine to their OpenAI key via the local server; no data to DevLens.
 
@@ -20,8 +20,8 @@ Single reference for what the product is, how it’s built, and how the repo is 
 
 | Component | Role |
 |-----------|------|
-| **Browser extension** | UI: sidepanel (panel), content script on pages, options page, context menu. Talks to local server for AI and screenshots. |
-| **Feed server** (Node, port 2847) | Receives extension requests; calls OpenAI; optional Gumroad license check for AI; saves screenshots. User runs it locally with their `.env` (OPENAI_API_KEY, optional GUMROAD_PRODUCT_ID). |
+| **Browser extension** | UI: sidepanel (panel), content script on pages, options page, context menu. Default API base: **hosted** feed (`scripts/build.js` → e.g. Vercel). Optional **`build:local-feed`** → `http://localhost:2847`. |
+| **Feed server** (Node, port 2847) | Same as hosted deployment: OpenAI, Gumroad, JWT trials, screenshots. **Local `npm start`** only when developing the server or using **`npm run build:local-feed`**. |
 | **Website** (optional) | Static pricing/landing page (e.g. Free vs Pro). Host separately (e.g. GitHub Pages). |
 
 Only the **extension** is distributed via the Chrome Web Store. The server and website are not in the store.

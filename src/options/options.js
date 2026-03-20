@@ -8,14 +8,15 @@ const LICENSE_EMAIL_STORAGE_KEY = 'devlynx_license_email';
 const LICENSE_TOKEN_STORAGE_KEY = 'devlynx_license_token';
 const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const DEVICE_ID_STORAGE_KEY = 'devlynx_device_id';
-const FEED_SERVER_PORT = 2847;
-/** Replaced at build (`npm run build:prod` → production API host in scripts/build.js) */
+/** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app';
+/** Replaced at build; placeholder → hosted Vercel feed API by default. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
 function apiBaseTrim() {
   let s = typeof DEVLYNX_API_BASE === 'string' ? DEVLYNX_API_BASE.trim() : '';
   if (!s || s.indexOf('__DEVLYNX_API_BASE__') !== -1) {
-    s = 'http://localhost:' + FEED_SERVER_PORT;
+    s = DEVLYNX_HOSTED_API_DEFAULT;
   }
   return s.replace(/\/$/, '');
 }

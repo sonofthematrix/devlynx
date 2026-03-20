@@ -18,8 +18,10 @@ The extension is built from **source in `src/`** into an obfuscated **`dist/`** 
 
 ```bash
 npm install           # once: install build tools
-npm run build         # src/ → dist/ — local API http://localhost:2847
-npm run build:prod    # src/ → dist/ — production API (see scripts/build.js)
+npm run build         # src/ → dist/ — hosted feed API (default: Vercel; see scripts/build.js)
+npm run build:prod    # src/ → dist/ — same hosted API + production license-jwt strip
+npm run build:local-feed   # dist/ uses http://localhost:2847 (run feed-server locally)
+npm run build:dev:local   # readable dist + localhost feed (for debugging feed-server)
 npm run release       # build:prod + zip → release/devlens-extension.zip (Chrome Web Store)
 npm run package       # dev build + zip (localhost feed server)
 ```
@@ -44,14 +46,16 @@ Build uses [javascript-obfuscator](https://github.com/javascript-obfuscator/java
    In the **feed-server** folder: copy `.env.example` to `.env` and set  
    `OPENAI_API_KEY=sk-your-key`
 
-3. **Server (local feed API)**  
-   In **feed-server**: `npm install` once, then **`npm start`**. Leave the terminal open. The extension will show **Connected** when using the dev build (localhost). Production builds use the URL in **`scripts/build.js`** (e.g. **https://devlynx-black.vercel.app**) — no local server.
+3. **Feed API (optional locally)**  
+   **Default:** Dev and production builds use the **hosted** feed server (**`https://devlynx-black.vercel.app`**, configurable in **`scripts/build.js`** / `DEVLYNX_FEED_API`). No **`npm start`** required for the extension to connect.  
+   **Local feed server only if you need it:** `npm run build:local-feed` (or `DEVLYNX_FEED_LOCAL=1`) then run **`npm start`** in **feed-server**.
 
 **Toolbar icon:** Extensions menu (puzzle/cube) → find DevLynx AI → click **pin**.
 
 **Disconnected or “refused to connect”?**  
-- **Dev build:** Start **`npm start`** in **feed-server** and keep it running.  
-- **Production build:** Open **`https://devlynx-black.vercel.app/health`** (or your custom domain) — if it fails, fix deployment/DNS.  
+- Confirm **`https://devlynx-black.vercel.app/health`** loads in a browser.  
+- If you use **`build:local-feed`**: start **`npm start`** in **feed-server**.  
+- Reload the extension after rebuilding; use **`dist`** (or **`src`** now defaults to hosted API when the placeholder is still present).  
 2. Extensions → DevLynx AI → **reload** after code changes.  
 3. Click status in the panel to retry.
 
@@ -63,7 +67,7 @@ Build uses [javascript-obfuscator](https://github.com/javascript-obfuscator/java
 
 ## License verification (Pro)
 
-The extension calls **`POST http://localhost:2847/verify-license`** with a `license_key` in the request body. Only the **feed-server** decides if a license is valid; the extension never contains dev codes or bypass logic.
+The extension calls **`POST /verify-license`** on the configured feed API (default **hosted** URL in **`scripts/build.js`**, or **`http://localhost:2847`** with **`build:local-feed`**) with a `license_key` in the request body. Only the **feed-server** decides if a license is valid; the extension never contains dev codes or bypass logic.
 
 **1. Gumroad (paid users)**  
 Set **`GUMROAD_PRODUCT_ID`** in **feed-server/.env**. If the key is not a dev code (see below), the server verifies it with Gumroad’s API (`POST https://api.gumroad.com/v2/licenses/verify`). On success it returns `{ "valid": true, "ok": true, "type": "gumroad" }`.

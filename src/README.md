@@ -2,7 +2,7 @@
 
 ## Why you need the local server
 
-DevLynx AI uses a **small program on your PC** (the **feed server**) for AI requests, screenshots, and license checks. The Chrome extension connects to **`http://localhost:2847`**.  
+DevLynx AI connects to a **feed API** for AI (server OpenAI key), screenshots, and license checks. **Default builds** use the **hosted** URL in **`scripts/build.js`** (e.g. Vercel). Use **`npm run build:local-feed`** and **`npm start`** in **feed-server** for **`http://localhost:2847`** only when developing the server locally.  
 Without the server running, the extension shows “server not connected” and AI features will not work.
 
 **Plans:** **Free** includes core tools (inspect, API tester, site mods) plus a **shared trial of AI uses** (e.g. Dev assistant, AI Mod Generator, Explain Element, Error Explainer). **Pro** unlocks **unlimited** AI via a license key in Options.

@@ -12,9 +12,13 @@ const SRC_DIR = path.join(__dirname, '..', 'src');
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const SKIP_OBFUSCATE = process.env.SKIP_OBFUSCATE === '1' || process.argv.includes('--no-obfuscate');
 const IS_PRODUCTION_BUILD = process.argv.includes('--production');
-const DEVLYNX_API_BASE_REPLACE = IS_PRODUCTION_BUILD
-  ? 'https://devlynx-black.vercel.app'
-  : 'http://localhost:2847';
+
+/** Default feed API for dev + prod builds. Override: DEVLYNX_FEED_LOCAL=1, --local-feed, or DEVLYNX_FEED_API=https://... */
+const HOSTED_FEED_API = (process.env.DEVLYNX_FEED_API || 'https://devlynx-black.vercel.app').trim();
+const LOCAL_FEED_API = 'http://localhost:2847';
+const useLocalFeed =
+  process.argv.includes('--local-feed') || process.env.DEVLYNX_FEED_LOCAL === '1';
+const DEVLYNX_API_BASE_REPLACE = useLocalFeed ? LOCAL_FEED_API : HOSTED_FEED_API;
 
 // In dev build (no obfuscation), set DEBUG_MODE = true so [DevLens][*] logs appear in Console
 function injectDebugModeIfDev(code) {
@@ -84,6 +88,12 @@ function build() {
     console.error('Source folder "src" not found. Create it and put extension files there.');
     process.exit(1);
   }
+
+  console.log(
+    'Feed API base:',
+    DEVLYNX_API_BASE_REPLACE,
+    useLocalFeed ? '(localhost; use hosted default without --local-feed)' : ''
+  );
 
   if (fs.existsSync(DIST_DIR)) {
     fs.rmSync(DIST_DIR, { recursive: true });

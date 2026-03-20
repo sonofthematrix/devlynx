@@ -1,11 +1,12 @@
-const CURSOR_FEED_PORT = 2847;
-/** Replaced at build (`npm run build:prod` → production API host in scripts/build.js) */
+/** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app';
+/** Replaced at build; placeholder → hosted API so local/dev loads work without npm start in feed-server. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
 function panelApiBaseTrim() {
   let s = typeof DEVLYNX_API_BASE === 'string' ? DEVLYNX_API_BASE.trim() : '';
   if (!s || s.indexOf('__DEVLYNX_API_BASE__') !== -1) {
-    s = 'http://localhost:' + CURSOR_FEED_PORT;
+    s = DEVLYNX_HOSTED_API_DEFAULT;
   }
   return s.replace(/\/$/, '');
 }

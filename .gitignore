@@ -3,9 +3,12 @@ node_modules/
 release/*.zip
 *.zip
 
-# Secrets
+# Secrets (never commit)
 .env
+.env.local
+.env.*.local
 feed-server/.env
+feed-server/.env.local
 
 # Local signing / packaging (do not publish)
 *.pem

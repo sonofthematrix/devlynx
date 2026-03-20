@@ -4,14 +4,15 @@ importScripts('shared/validate-license-token.js');
 // Service worker for Opera extension (Manifest V3)
 // Runs in the background; survives until idle.
 
-const CURSOR_FEED_PORT = 2847;
-/** Replaced at build: `npm run build:prod` → production API (e.g. https://devlynx-black.vercel.app) */
+/** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app';
+/** Replaced at build: `npm run build` / `build:prod`; placeholder → hosted API so unpacked dev works without local feed server. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
 function apiBaseTrim() {
   let s = typeof DEVLYNX_API_BASE === 'string' ? DEVLYNX_API_BASE.trim() : '';
   if (!s || s.indexOf('__DEVLYNX_API_BASE__') !== -1) {
-    s = 'http://localhost:' + CURSOR_FEED_PORT;
+    s = DEVLYNX_HOSTED_API_DEFAULT;
   }
   return s.replace(/\/$/, '');
 }
@@ -68,7 +69,7 @@ const LICENSE_TOKEN_STORAGE_KEY = 'devlynx_license_token';
 const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const DEVICE_ID_STORAGE_KEY = 'devlynx_device_id';
 
-/** Verify URL: dev `http://localhost:2847/verify-license`, prod uses __DEVLYNX_API_BASE__ + `/verify-license`. */
+/** Verify URL: `__DEVLYNX_API_BASE__` + `/verify-license` (default hosted feed; or localhost with `build:local-feed`). */
 
 /** Re-verify Pro with server at most every 6h; network failures use this window for grace access. */
 const LICENSE_CACHE_MS = 6 * 60 * 60 * 1000;
