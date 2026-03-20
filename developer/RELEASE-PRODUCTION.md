@@ -8,7 +8,7 @@
 
 1. GitHub repo connected → **Root directory:** `feed-server` (Dockerfile deploy).
 2. **Variables:** `OPENAI_API_KEY`, `GUMROAD_PRODUCT_ID` (if using Gumroad), optional `OPENAI_MODEL`, `DEV_CODES`, optional **`LICENSE_JWT_PRIVATE_KEY`** ( **`GET /trial-token`** / **`POST /trial-consume`** ; pair with public PEM in **`src/license-jwt-public.js`** — **[developer/LICENSE-JWT-KEYS.md](LICENSE-JWT-KEYS.md)** ), optional **`DEVLYNX_TRIAL_LIMIT`**. On Vercel, also **`BLOB_READ_WRITE_TOKEN`** for screenshot + persisted trial store.
-3. **Public HTTPS URL** must match the extension build: default **`https://api.devlynx.ai`** (custom domain on Railway) or change `DEVLYNX_API_BASE_REPLACE` in `scripts/build.js` and rebuild.
+3. **Public HTTPS URL** must match the extension build: set **`DEVLYNX_API_BASE_REPLACE`** in **`scripts/build.js`** (default **`https://devlynx-black.vercel.app`**) and add the same origin to **`src/manifest.json`** `host_permissions`, then rebuild.
 4. Verify: `GET https://<your-host>/health` → `"ok": true`.
 
 ## 1b. DNS for `api.devlynx.ai` (registrar / Cloudflare / etc.)

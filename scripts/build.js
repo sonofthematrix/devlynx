@@ -12,7 +12,9 @@ const SRC_DIR = path.join(__dirname, '..', 'src');
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const SKIP_OBFUSCATE = process.env.SKIP_OBFUSCATE === '1' || process.argv.includes('--no-obfuscate');
 const IS_PRODUCTION_BUILD = process.argv.includes('--production');
-const DEVLYNX_API_BASE_REPLACE = IS_PRODUCTION_BUILD ? 'https://api.devlynx.ai' : 'http://localhost:2847';
+const DEVLYNX_API_BASE_REPLACE = IS_PRODUCTION_BUILD
+  ? 'https://devlynx-black.vercel.app'
+  : 'http://localhost:2847';
 
 // In dev build (no obfuscation), set DEBUG_MODE = true so [DevLens][*] logs appear in Console
 function injectDebugModeIfDev(code) {

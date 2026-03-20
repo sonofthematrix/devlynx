@@ -12,14 +12,14 @@ The extension is built from **source in `src/`** into an obfuscated **`dist/`** 
 
 - **Source:** Edit code in **`src/`** (readable). All JavaScript there is obfuscated only in the build output.
 - **Build:** Run `npm run build` to produce **`dist/`** (obfuscated JS + copied manifest, HTML, CSS, icons).
-- **Store / production zip:** Run **`npm run release`** — runs **`build:prod`** (API base `https://api.devlynx.ai`) then zips → **`release/devlens-extension.zip`**.
+- **Store / production zip:** Run **`npm run release`** — runs **`build:prod`** (production API base from `scripts/build.js`, currently **`https://devlynx-black.vercel.app`**) then zips → **`release/devlens-extension.zip`**.
 
 **Commands:**
 
 ```bash
 npm install           # once: install build tools
 npm run build         # src/ → dist/ — local API http://localhost:2847
-npm run build:prod    # src/ → dist/ — production API https://api.devlynx.ai
+npm run build:prod    # src/ → dist/ — production API (see scripts/build.js)
 npm run release       # build:prod + zip → release/devlens-extension.zip (Chrome Web Store)
 npm run package       # dev build + zip (localhost feed server)
 ```
@@ -45,13 +45,13 @@ Build uses [javascript-obfuscator](https://github.com/javascript-obfuscator/java
    `OPENAI_API_KEY=sk-your-key`
 
 3. **Server (local feed API)**  
-   In **feed-server**: `npm install` once, then **`npm start`**. Leave the terminal open. The extension will show **Connected** when using the dev build (localhost). Production builds use **https://api.devlynx.ai** — no local server.
+   In **feed-server**: `npm install` once, then **`npm start`**. Leave the terminal open. The extension will show **Connected** when using the dev build (localhost). Production builds use the URL in **`scripts/build.js`** (e.g. **https://devlynx-black.vercel.app**) — no local server.
 
 **Toolbar icon:** Extensions menu (puzzle/cube) → find DevLynx AI → click **pin**.
 
 **Disconnected or “refused to connect”?**  
 - **Dev build:** Start **`npm start`** in **feed-server** and keep it running.  
-- **Production build:** Open **https://api.devlynx.ai/health** — if it fails, fix Railway/DNS.  
+- **Production build:** Open **`https://devlynx-black.vercel.app/health`** (or your custom domain) — if it fails, fix deployment/DNS.  
 2. Extensions → DevLynx AI → **reload** after code changes.  
 3. Click status in the panel to retry.
 

@@ -40,7 +40,9 @@ Do **not** rely on `PORT` on Vercel.
 
 ## 4. Custom domain
 
-Point **`api.devlynx.ai`** (CNAME to `cname.vercel-dns.com` or as shown in Vercel **Domains**) to this project. The extension production build uses **`https://api.devlynx.ai`**.
+Point **`api.devlynx.ai`** (CNAME to `cname.vercel-dns.com` or as shown in Vercel **Domains**) to this project if you use a custom domain.
+
+The extension **`npm run build:prod`** API base is set in **`scripts/build.js`** (default **`https://devlynx-black.vercel.app`**). Add that host under **`host_permissions`** in `src/manifest.json` if you change it.
 
 ## 5. Verify
 

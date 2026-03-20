@@ -5,7 +5,7 @@ importScripts('shared/validate-license-token.js');
 // Runs in the background; survives until idle.
 
 const CURSOR_FEED_PORT = 2847;
-/** Replaced at build: `npm run build:prod` → https://api.devlynx.ai */
+/** Replaced at build: `npm run build:prod` → production API (e.g. https://devlynx-black.vercel.app) */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
 function apiBaseTrim() {
@@ -16,11 +16,12 @@ function apiBaseTrim() {
   return s.replace(/\/$/, '');
 }
 
-/** @returns {string[]} Full URLs (fallback localhost ↔ 127.0.0.1 in dev). */
+/** @returns {string[]} Full URLs (hosted: single URL; dev: localhost ↔ 127.0.0.1). */
 function licenseApiUrlCandidates(pathSuffix) {
   const suf = pathSuffix.charAt(0) === '/' ? pathSuffix : '/' + pathSuffix;
   const b = apiBaseTrim();
-  if (b.indexOf('api.devlynx.ai') !== -1) {
+  const local = b.indexOf('localhost') !== -1 || b.indexOf('127.0.0.1') !== -1;
+  if (!local) {
     return [b + suf];
   }
   const alt =
@@ -67,7 +68,7 @@ const LICENSE_TOKEN_STORAGE_KEY = 'devlynx_license_token';
 const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const DEVICE_ID_STORAGE_KEY = 'devlynx_device_id';
 
-/** Verify URL: dev `http://localhost:2847/verify-license`, prod `https://api.devlynx.ai/verify-license` via __DEVLYNX_API_BASE__ + `/verify-license`. */
+/** Verify URL: dev `http://localhost:2847/verify-license`, prod uses __DEVLYNX_API_BASE__ + `/verify-license`. */
 
 /** Re-verify Pro with server at most every 6h; network failures use this window for grace access. */
 const LICENSE_CACHE_MS = 6 * 60 * 60 * 1000;

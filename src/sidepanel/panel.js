@@ -1,5 +1,5 @@
 const CURSOR_FEED_PORT = 2847;
-/** Replaced at build (`npm run build:prod` → https://api.devlynx.ai) */
+/** Replaced at build (`npm run build:prod` → production API host in scripts/build.js) */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
 function panelApiBaseTrim() {
@@ -66,7 +66,7 @@ const LICENSE_CACHE_MS = 6 * 60 * 60 * 1000; // refresh license status after 6h 
 function panelLicenseUrlCandidates(pathSuffix) {
   const suf = pathSuffix.charAt(0) === '/' ? pathSuffix : '/' + pathSuffix;
   const b = panelApiBaseTrim();
-  if (b.indexOf('api.devlynx.ai') !== -1) {
+  if (!panelIsLocalFeedServer()) {
     return [b + suf];
   }
   const alt =

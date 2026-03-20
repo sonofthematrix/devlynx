@@ -25,7 +25,8 @@
     "http://localhost:2847/*",
     "http://127.0.0.1:2847/*",
     "https://api.openai.com/*",
-    "https://api.devlynx.ai/*"
+    "https://api.devlynx.ai/*",
+    "https://devlynx-black.vercel.app/*"
   ],
   "side_panel": {
     "default_path": "sidepanel/panel.html"
