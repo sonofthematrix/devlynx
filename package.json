@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "devlens-saas",
   "version": "1.1.2",
   "description": "DevLynx AI – Chrome extension and feed server",
@@ -19,11 +20,25 @@
     "archiver": "^7.0.1",
     "javascript-obfuscator": "^4.1.1",
     "sharp": "^0.34.5"
+=======
+  "name": "feed-server",
+  "version": "1.0.0",
+  "description": "DevLynx AI feed server (Railway + local)",
+  "main": "server-with-ai.js",
+  "scripts": {
+    "start": "node server-with-ai.js"
+>>>>>>> f09544b51437f9fb8d38674bfdfc8d505ed7cb98
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+<<<<<<< HEAD
     "jsonwebtoken": "^9.0.3"
+=======
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "openai": "^4.20.0"
+>>>>>>> f09544b51437f9fb8d38674bfdfc8d505ed7cb98
   }
 }

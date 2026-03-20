@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 node_modules/
 
 release/*.zip
@@ -15,3 +16,13 @@ feed-server/.env
 feed-server/licenses.json
 feed-server/licenses.json.tmp
 feed-server/trials.json
+=======
+node_modules
+.env
+screenshots
+licenses.json
+licenses.json.tmp
+trials.json
+.git
+.DS_Store
+>>>>>>> f09544b51437f9fb8d38674bfdfc8d505ed7cb98
