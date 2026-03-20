@@ -326,6 +326,17 @@ async function feedServerHandler(req, res) {
   const pathname = getRequestPathname(req);
 
   try {
+  // Root URL (e.g. opening the Vercel deployment in a browser)
+  if (req.method === 'GET' && (pathname === '/' || pathname === '')) {
+    send(res, 200, {
+      ok: true,
+      service: 'devlens-feed',
+      message: 'DevLynx AI feed server is running.',
+      docs: 'GET /health for status; POST / with JSON body for API.'
+    });
+    return;
+  }
+
   if (req.method === 'GET' && pathname === '/projects') {
     send(res, 200, { ok: true, projects: [{ index: 0, name: 'Default workspace' }] });
     return;
