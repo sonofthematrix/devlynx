@@ -1,6 +1,6 @@
 {
   "name": "devlens-saas",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "DevLynx AI – Chrome extension and feed server",
   "private": true,
   "scripts": {
@@ -16,7 +16,18 @@
     "store-thumbnail:square": "node scripts/square-store-thumbnail.js",
     "store-promos:resize": "node scripts/resize-store-promos.js",
     "store-promos:from-screenshot": "node scripts/build-promos-from-screenshot.js",
-    "gen:license-jwt-keys": "node scripts/gen-license-jwt-keys.js"
+    "gen:license-jwt-keys": "node scripts/gen-license-jwt-keys.js",
+    "sync:license-jwt-to-root-env": "node scripts/sync-license-jwt-to-root-env.js",
+    "check:env-pem": "node scripts/check-env-pem.js",
+    "jwt:copy-for-vercel": "node scripts/copy-jwt-for-vercel.js",
+    "check:gumroad-product": "node scripts/check-gumroad-product.js",
+    "check:license-system": "node scripts/check-license-system.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.27.3",
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "openai": "^4.20.0"
   },
   "devDependencies": {
     "archiver": "^7.0.1",
@@ -24,6 +35,6 @@
     "sharp": "^0.34.5"
   },
   "engines": {
-    "node": ">=18"
+    "node": "20.x"
   }
 }

@@ -1,9 +1,11 @@
 {
-  "version": 2,
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "node -e \"console.log('API deploy: skip extension build'); process.exit(0);\"",
   "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs20.x",
+    "api/index.js": {
+      "maxDuration": 60
+    },
+    "api/[[...slug]].js": {
       "maxDuration": 60
     }
   },
