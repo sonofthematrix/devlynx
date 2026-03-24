@@ -210,5 +210,8 @@ Screenshots / promos: **`assets/screenshot-sidepanel.png`**, then **`npm run sto
 - [PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md) — repo layout  
 - [PRODUCT-SUMMARY.md](PRODUCT-SUMMARY.md) — product overview  
 - [developer/VERCEL.md](developer/VERCEL.md) — Vercel deep dive  
-- [developer/RELEASE-PRODUCTION.md](developer/RELEASE-PRODUCTION.md) — production checklist  
-- [src/README.md](src/README.md) — extension-focused readme  
+- [developer/RELEASE-PRODUCTION.md](developer/RELEASE-PRODUCTION.md) — production checklist
+- [developer/STORE-READY-CHECKLIST-NL.md](developer/STORE-READY-CHECKLIST-NL.md) — Chrome Web Store (NL checklist)
+- [developer/PRODUCT-FLOW-PLANS-NL.md](developer/PRODUCT-FLOW-PLANS-NL.md) — huidige vs. kostenarme productflow (NL)
+- [developer/PRESENTATIE-PLAN-B-DEVLYNX-NL.md](developer/PRESENTATIE-PLAN-B-DEVLYNX-NL.md) — presentatie Plan B (product, prijs, Vercel)
+- [src/README.md](src/README.md) — extension-focused readme

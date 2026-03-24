@@ -6,7 +6,9 @@ Copy the text below into the store submission form. Replace the support URL with
 
 ## Launch checklist (voor upload)
 
-1. **Build + ZIP:** vanaf projectroot: `npm run store-ready`  
+**Beknopt (NL, afvinken):** [STORE-READY-CHECKLIST-NL.md](STORE-READY-CHECKLIST-NL.md)
+
+1. **Build + ZIP:** vanaf projectroot: `npm run store-ready` **of** `npm run release` → zie checklist voor zip-namen  
    → levert `release/devlynx-ai-chrome-store.zip` en vult `store-ready/` (alleen extensie).
 
 2. **ZIP-inhoud:** mag **alleen** extensiebestanden bevatten, o.a.  
