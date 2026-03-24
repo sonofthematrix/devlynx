@@ -1,13 +1,13 @@
 {
   "name": "feed-server",
   "version": "1.0.0",
-  "description": "DevLynx AI feed server (Vercel, Railway, or local Node)",
+  "description": "DevLynx AI feed server (Vercel or local Node)",
   "main": "server-with-ai.js",
   "scripts": {
     "start": "node server-with-ai.js",
-    "vercel-build": "node scripts/vercel-build.js",
+    "vercel-build": "node -e \"console.log('feed-server: API only (no static output)')\"",
     "gen:license-jwt-keys": "node ../scripts/gen-license-jwt-keys.js",
-    "build": "npm run build --prefix ..",
+    "build": "node -e \"console.log('feed-server: API only (no static output)')\"",
     "build:prod": "npm run build:prod --prefix ..",
     "release": "npm run release --prefix .."
   },

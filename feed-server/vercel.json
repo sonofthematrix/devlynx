@@ -1,9 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
-  "outputDirectory": "public",
   "functions": {
     "api/server/[[...slug]].js": {
+      "runtime": "nodejs20.x",
       "maxDuration": 60
     }
   },
