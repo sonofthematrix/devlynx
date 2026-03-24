@@ -5,7 +5,6 @@
   "main": "server-with-ai.js",
   "scripts": {
     "start": "node server-with-ai.js",
-    "vercel-build": "node -e \"console.log('feed-server: API only (no static output)')\"",
     "gen:license-jwt-keys": "node ../scripts/gen-license-jwt-keys.js",
     "build": "node -e \"console.log('feed-server: API only (no static output)')\"",
     "build:prod": "npm run build:prod --prefix ..",

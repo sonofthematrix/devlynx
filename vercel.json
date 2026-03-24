@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "node -e \"console.log('API deploy: skip extension build'); process.exit(0);\"",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/api" },
+    {
+      "source": "/:path((?!api/).+)",
+      "destination": "/api/:path"
+    }
+  ]
+}
