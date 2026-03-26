@@ -1,5 +1,5 @@
 /** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
-const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app';
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app/api';
 /** Replaced at build; placeholder → hosted API so local/dev loads work without npm start in feed-server. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
@@ -32,6 +32,86 @@ function serverOfflineMsg() {
   );
 }
 
+function getErrorType(status) {
+  const types = {
+    '401': 'Authentication Error',
+    '403': 'Forbidden',
+    '404': 'Not Found',
+    '429': 'Rate Limit',
+    '500': 'Server Error'
+  };
+  const key = status != null ? String(status) : '';
+  return types[key] || (key ? `HTTP ${key}` : 'unknown');
+}
+
+function parseConsoleErrors(errorText) {
+  const lines = errorText.split('\n').filter((line) => line.trim());
+  const statusRes = [
+    /status of (\d{3})\b/i,
+    /responded with a status of (\d{3})\b/i,
+    /\bHTTP\/[\d.]+\s+(\d{3})\b/i,
+    /\]\s*(\d{3})\s+\([^)]*\)\s*$/i,
+    /^(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+\S+\s+(\d{3})\b/i
+  ];
+  return lines.map((line) => {
+    let status = null;
+    for (let i = 0; i < statusRes.length; i++) {
+      const m = line.match(statusRes[i]);
+      if (m) {
+        status = m[1];
+        break;
+      }
+    }
+    const urlMatch = line.match(/(https?:\/\/[^\s"'<>]+)/);
+    let url = urlMatch ? urlMatch[1] : null;
+    if (url) url = url.replace(/[,;.)'"\]]+$/, '');
+
+    let type = 'unknown';
+    if (status) type = getErrorType(status);
+    else if (/CORS|cross-origin|Access-Control-Allow|blocked by CORS/i.test(line)) type = 'CORS';
+    else if (/Failed to fetch|NetworkError|net::ERR_/i.test(line)) type = 'Network';
+
+    return {
+      original: line,
+      status,
+      url,
+      type
+    };
+  });
+}
+
+/** Compact block appended to error explainer input so the model sees HTTP hints extracted from the paste. */
+function formatParsedConsoleErrorsForPrompt(errorText) {
+  const parsed = parseConsoleErrors(errorText);
+  if (!parsed.some((p) => p.status || p.url)) return '';
+  return (
+    '\n\n---\n[Auto-parsed from paste — use with raw console output above]\n' +
+    JSON.stringify(parsed, null, 2) +
+    '\n---\n'
+  );
+}
+
+/**
+ * Active-tab context for error explainer (appended to user paste; server still runs explainError prompt).
+ * Mirrors explainErrorsWithContext-style wording without a separate callAI entrypoint.
+ */
+function buildErrorExplainerContextBlock(tab) {
+  const url = tab && tab.url ? tab.url : 'unknown';
+  const title = tab && tab.title ? tab.title : 'unknown';
+  return (
+    '\n\n---\n[Page / extension context]\n' +
+    `I'm debugging a Chrome extension on this tab:\nURL: ${url}\nTitle: ${title}\n\n` +
+    'Console errors to analyze are in the text above this block.\n\n' +
+    'These errors are from a Chrome extension context. Consider:\n' +
+    '- Extension content scripts vs background service worker vs extension pages (popup/side panel)\n' +
+    '- Manifest V3 permissions and host_permissions\n' +
+    '- CORS policies for extensions (what fetch from which context can reach which origin)\n' +
+    '- chrome.storage for sensitive data and API keys\n' +
+    '- Extension API limits and rate limits on third-party APIs\n\n' +
+    'Provide fixes that work in a Chrome extension environment.\n---\n'
+  );
+}
+
 const PANEL_API_BASE = panelApiBaseTrim();
 const feedUrl = PANEL_API_BASE + '/';
 const projectsUrl = PANEL_API_BASE + '/projects';
@@ -53,6 +133,24 @@ let userOpenAiReady = false;
 let serverConnected = false;
 let currentLoadId = 0;
 
+/**
+ * While disconnected, auto-retry GET /projects on an interval. Capped so a broken deploy
+ * does not hammer the hosted feed (Vercel invocations). Reset on connect, manual retry,
+ * or when the user returns to the panel (visibility).
+ */
+const FEED_DISCONNECT_POLL_MAX = 30;
+const FEED_DISCONNECT_POLL_MS = 5000;
+let feedDisconnectAutoPollCount = 0;
+
+function resetFeedDisconnectPollBurst() {
+  feedDisconnectAutoPollCount = 0;
+  const hintEl = document.getElementById('disconnect-hint');
+  if (hintEl && hintEl.dataset.pollPaused) {
+    delete hintEl.dataset.pollPaused;
+    if (!serverConnected) hintEl.textContent = serverOfflineMsg();
+  }
+}
+
 // Freemium: plan stored in chrome.storage.local; 'free' | 'pro'
 const PLAN_STORAGE_KEY = 'devlens_plan';
 const PLAN_MIRROR_KEY = 'devlynx_plan';
@@ -64,6 +162,35 @@ const DEVICE_ID_STORAGE_KEY = 'devlynx_device_id';
 const LICENSE_TOKEN_STORAGE_KEY = 'devlynx_license_token';
 const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const LICENSE_CACHE_MS = 6 * 60 * 60 * 1000; // refresh license status after 6h (match background verify cache)
+/** Match server default LICENSE_MAX_ACTIVE_DEVICES */
+const LICENSE_DEVICE_CAP = 3;
+
+function panelVerifyErrorMessage(data) {
+  const d = data || {};
+  const code = d.error_code ? String(d.error_code) : '';
+  if (code === 'device_limit') {
+    return (
+      'Device limit: this license is active on ' +
+      LICENSE_DEVICE_CAP +
+      ' devices (90-day rolling window). Wait for an unused slot to expire, contact support for a reset, or continue with Free.'
+    );
+  }
+  if (code === 'invalid_key') {
+    const detail = (d.error && String(d.error).trim()) || '';
+    if (
+      detail &&
+      !/^invalid license/i.test(detail) &&
+      !/^no license key/i.test(detail)
+    ) {
+      return 'Invalid license key — ' + detail;
+    }
+    return 'Invalid license key. Check your purchase email or buy a license.';
+  }
+  if (code === 'bad_request') {
+    return (d.error && String(d.error).trim()) || 'Missing license or device id. Re-open the panel and try again.';
+  }
+  return (d.error && String(d.error).trim()) || 'Verification failed.';
+}
 function panelLicenseUrlCandidates(pathSuffix) {
   const suf = pathSuffix.charAt(0) === '/' ? pathSuffix : '/' + pathSuffix;
   const b = panelApiBaseTrim();
@@ -222,6 +349,7 @@ async function loadProjects() {
     return;
   }
   serverConnected = true;
+  resetFeedDisconnectPollBurst();
   const data = result.data;
   let statusMessage = 'Connected';
   if (loadId !== currentLoadId) return;
@@ -243,22 +371,30 @@ async function loadProjects() {
 }
 
 function setFeedServerStatus(connected, message, titleOverride) {
-  const el = document.getElementById('feed-server-status');
-  const badge = el && el.querySelector('.badge');
+  const el = document.getElementById('connection-status');
+  const statusText = document.getElementById('status-text');
   const hintEl = document.getElementById('disconnect-hint');
   if (!el) return;
+  el.classList.remove('checking');
   el.classList.toggle('error', !connected);
   el.classList.toggle('ok', connected);
-  el.title = titleOverride != null ? titleOverride : (connected ? 'Click to retry connection' : 'Click to retry connection');
-  if (badge) {
-    if (connected) badge.textContent = message || 'Connected';
-    else badge.textContent = message || 'Disconnected';
-  } else {
-    el.textContent = connected ? (message || 'Connected') : (message || 'Disconnected');
+  el.title = titleOverride != null ? titleOverride : 'Click to retry connection';
+  if (statusText) {
+    statusText.textContent = connected ? message || 'Connected' : message || 'Disconnected';
   }
   if (hintEl) {
     hintEl.hidden = !!connected;
-    if (!connected) hintEl.textContent = serverOfflineMsg();
+    if (!connected) {
+      if (hintEl.dataset.pollPaused) {
+        hintEl.textContent =
+          serverOfflineMsg() +
+          ' Auto-retry paused to limit server requests — click connection status or ⟳ to retry.';
+      } else {
+        hintEl.textContent = serverOfflineMsg();
+      }
+    } else if (hintEl.dataset.pollPaused) {
+      delete hintEl.dataset.pollPaused;
+    }
   }
 }
 
@@ -363,8 +499,8 @@ const DEBUG_LAST_ERROR_KEY = 'devlens_last_error';
 function getVersion() {
   try {
     const manifest = chrome.runtime.getManifest();
-    return (manifest && manifest.version) ? manifest.version : '1.1.2';
-  } catch (_) { return '1.1.2'; }
+    return (manifest && manifest.version) ? manifest.version : '1.1.3';
+  } catch (_) { return '1.1.3'; }
 }
 
 /** Pro is derived from signed JWT + local validation (not from plan flags). */
@@ -592,18 +728,46 @@ function markdownToHtml(text) {
   return out;
 }
 
+function updateAnswerBlockTimestampForEl(contentEl) {
+  if (!contentEl || !contentEl.id) return;
+  const ts = document.querySelector('.answer-timestamp[data-answer-for="' + contentEl.id + '"]');
+  if (!ts) return;
+  try {
+    ts.textContent =
+      'Generated ' +
+      new Date().toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  } catch (_) {
+    ts.textContent = 'Generated just now';
+  }
+}
+
+function resetAnswerBlockTimestampForEl(contentEl) {
+  if (!contentEl || !contentEl.id) return;
+  const ts = document.querySelector('.answer-timestamp[data-answer-for="' + contentEl.id + '"]');
+  if (ts) ts.textContent = '—';
+  const block = contentEl.closest('.answer-block');
+  if (block) block.classList.remove('is-expanded');
+  const expandEmoji = block?.querySelector(
+    '.btn-expand-answer[data-expand-for="' + contentEl.id + '"] .expand-emoji'
+  );
+  if (expandEmoji) expandEmoji.textContent = '⬆️';
+}
+
 function setAnswerWithMarkdown(el, rawText, options) {
   if (!el) return;
   const useMarkdown = options?.markdown !== false;
   if (useMarkdown && rawText) {
     el.innerHTML = markdownToHtml(rawText);
     el.classList.remove('empty');
+    updateAnswerBlockTimestampForEl(el);
   } else if (rawText) {
     el.textContent = rawText;
     el.classList.remove('empty');
+    updateAnswerBlockTimestampForEl(el);
   } else {
     el.textContent = '';
     el.classList.add('empty');
+    resetAnswerBlockTimestampForEl(el);
   }
 }
 
@@ -681,9 +845,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadProjects().catch(() => {});
   setTimeout(() => { if (!serverConnected) loadProjects().catch(() => {}); }, 800);
 
-  // When user opens or returns to the panel, retry if still disconnected
+  // When user opens or returns to the panel, retry if still disconnected (fresh auto-retry budget)
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !serverConnected) loadProjects().catch(() => {});
+    if (document.visibilityState === 'visible' && !serverConnected) {
+      resetFeedDisconnectPollBurst();
+      loadProjects().catch(() => {});
+    }
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
@@ -817,9 +984,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         device_id: deviceId,
         extension_id: chrome.runtime.id
       });
+      // Vercel cold start + Gumroad round-trip can exceed 5s
       const verifySignal =
         typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
-          ? AbortSignal.timeout(5000)
+          ? AbortSignal.timeout(45000)
           : undefined;
       for (const vUrl of panelLicenseUrlCandidates('/verify-license')) {
         try {
@@ -878,14 +1046,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyPlanUI(plan);
         await updateTrialUI();
         updateStatusBar();
-        setPanelLicenseInlineStatus('Pro activated.', 'success');
+        let proMsg = 'Pro activated.';
+        if (typeof data.devices_used === 'number' && data.devices_used >= 2) {
+          proMsg +=
+            ' In use on ' + data.devices_used + ' of ' + LICENSE_DEVICE_CAP + ' allowed devices.';
+        }
+        setPanelLicenseInlineStatus(proMsg, 'success');
         if (licensePanel) {
           licensePanel.classList.remove('open');
           licensePanel.setAttribute('aria-hidden', 'true');
           activateLicenseToggle?.setAttribute('aria-expanded', 'false');
         }
       } else {
-        setPanelLicenseInlineStatus(data.error || 'Invalid license key.', 'error');
+        setPanelLicenseInlineStatus(panelVerifyErrorMessage(data), 'error');
       }
     } catch (err) {
       setPanelLicenseInlineStatus(serverOfflineMsg(), 'error');
@@ -910,10 +1083,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.local.set({ [RATE_PROMPT_DISMISSED_KEY]: true }, () => updateRatePromptUI());
   });
 
-  // Auto-retry connection every 5s while panel is open so Connected appears when server is running
+  // Auto-retry while disconnected (capped — see FEED_DISCONNECT_POLL_MAX)
   setInterval(() => {
-    if (!serverConnected) loadProjects().catch(() => {});
-  }, 5000);
+    if (serverConnected) {
+      feedDisconnectAutoPollCount = 0;
+      return;
+    }
+    if (feedDisconnectAutoPollCount >= FEED_DISCONNECT_POLL_MAX) {
+      const hintEl = document.getElementById('disconnect-hint');
+      if (hintEl && !hintEl.dataset.pollPaused) {
+        hintEl.dataset.pollPaused = '1';
+        hintEl.textContent =
+          serverOfflineMsg() +
+          ' Auto-retry paused to limit server requests — click connection status or ⟳ to retry.';
+      }
+      return;
+    }
+    feedDisconnectAutoPollCount += 1;
+    loadProjects().catch(() => {});
+  }, FEED_DISCONNECT_POLL_MS);
 
   const versionEl = document.getElementById('panel-version');
   if (versionEl) versionEl.textContent = 'DevLynx v' + getVersion();
@@ -921,6 +1109,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (headerVersionEl) headerVersionEl.textContent = 'v' + getVersion();
 
   document.addEventListener('click', (e) => {
+    const expandBtn = e.target.closest('.btn-expand-answer');
+    if (expandBtn) {
+      const id = expandBtn.getAttribute('data-expand-for');
+      const content = id ? document.getElementById(id) : null;
+      const block = content && content.closest('.answer-block');
+      if (block) {
+        block.classList.toggle('is-expanded');
+        const em = expandBtn.querySelector('.expand-emoji');
+        if (em) em.textContent = block.classList.contains('is-expanded') ? '⬇️' : '⬆️';
+        expandBtn.title = block.classList.contains('is-expanded') ? 'Collapse' : 'Expand';
+      }
+      return;
+    }
     const clearBtn = e.target.closest('.btn-clear-answer');
     if (clearBtn) {
       const id = clearBtn.getAttribute('data-clear-from');
@@ -932,6 +1133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.innerHTML = '';
         el.classList.add('empty');
       }
+      resetAnswerBlockTimestampForEl(el);
       return;
     }
     const btn = e.target.closest('.btn-copy-answer');
@@ -941,10 +1143,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!el) return;
     const text = el.innerText || el.textContent || '';
     if (!text) return;
-    const label = btn.textContent || 'Copy';
+    const emojiSpan = btn.querySelector('.answer-btn-emoji');
+    const prevEmoji = emojiSpan ? emojiSpan.textContent : '';
     navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = label; }, 1500);
+      if (emojiSpan) {
+        emojiSpan.textContent = '✓';
+        setTimeout(() => {
+          emojiSpan.textContent = prevEmoji || '📋';
+        }, 1500);
+      } else {
+        const label = btn.textContent || 'Copy';
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = label;
+        }, 1500);
+      }
     }).catch(() => {});
   });
 
@@ -963,14 +1176,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Click status badge or status bar "DevLynx Server" row to retry connection
+  // Connection row or ⟳ retry + status bar "DevLynx Server" when disconnected
   function retryConnection() {
-    ref('feed-server-status')?.classList.remove('error', 'ok');
-    const badge = document.querySelector('#feed-server-status .badge');
-    if (badge) badge.textContent = 'checking…';
+    resetFeedDisconnectPollBurst();
+    const conn = document.getElementById('connection-status');
+    const statusText = document.getElementById('status-text');
+    if (conn) {
+      conn.classList.remove('error', 'ok');
+      conn.classList.add('checking');
+    }
+    if (statusText) statusText.textContent = 'Checking…';
     loadProjects().catch(() => {});
   }
-  ref('feed-server-status')?.addEventListener('click', retryConnection);
+  ref('connection-status')?.addEventListener('click', retryConnection);
   ref('status-bar-server')?.addEventListener('click', () => {
     if (!serverConnected) retryConnection();
   });
@@ -985,9 +1203,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const label = labels[data.action] || 'AI';
         el.innerHTML = `<span class="last-ai-label">${escapeHtml(label)}</span><br>${markdownToHtml(data.answer)}`;
         el.classList.remove('empty');
+        updateAnswerBlockTimestampForEl(el);
       } else {
         el.textContent = '';
         el.classList.add('empty');
+        resetAnswerBlockTimestampForEl(el);
       }
     }
     if (data && data.action === 'explainElement' && data.answer) {
@@ -1008,12 +1228,128 @@ document.addEventListener('DOMContentLoaded', async () => {
         setAnswerWithMarkdown(answerEl, data.answer);
         setStatus('explain-element-status', 'Done.');
       }
+      return;
+    }
+    if (data && data.answer && data.action !== 'explainElement') {
+      const el = document.getElementById('last-ai-result');
+      if (el) {
+        const labels = { ask: 'Ask AI', generateRequestCode: 'Generate code', explainError: 'Explain error', explainEndpoint: 'Explain endpoint', tsTypes: 'TS types', refactorCode: 'Refactor' };
+        const label = labels[data.action] || 'AI';
+        el.innerHTML = `<span class="last-ai-label">${escapeHtml(label)}</span><br>${markdownToHtml(data.answer)}`;
+        el.classList.remove('empty');
+        updateAnswerBlockTimestampForEl(el);
+      }
     }
   });
 
   async function getActiveTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     return tab && tab.id ? tab : null;
+  }
+
+  async function injectContentScript(tabId) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content/error-capture-bridge.js', 'content/content.js'],
+      });
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          world: 'MAIN',
+          files: ['content/main-world-error-capture.js'],
+        });
+      } catch (_) {}
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: (error && error.message) || 'Injection failed' };
+    }
+  }
+
+  function sendMessageWithTimeout(tabId, message, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Timeout: Content script did not respond'));
+      }, timeoutMs);
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        clearTimeout(timeoutId);
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      });
+    });
+  }
+
+  function handleGetErrorsError(error, errorTextarea) {
+    let userMessage = (error && error.message) || 'Unknown error';
+    if (userMessage.includes('Receiving end does not exist') || userMessage.includes('Could not establish connection')) {
+      userMessage = 'Content script not loaded. Try refreshing the page completely and try again.';
+    } else if (userMessage.includes('chrome://')) {
+      userMessage = 'Cannot capture errors from Chrome internal pages.';
+    } else if (userMessage.includes('Timeout')) {
+      userMessage = 'Content script timeout. The page might be blocking extensions. Try a different website.';
+    }
+    if (errorTextarea) {
+      errorTextarea.value =
+        `Error: ${userMessage}\n\nTroubleshooting:\n1. Refresh the page completely (F5)\n2. Try a different website (e.g., google.com)\n3. Check browser console (F12) for details\n4. Manual option: Copy errors from console and paste above`;
+    }
+    setStatus('error-explainer-status', userMessage, true);
+  }
+
+  async function getPageErrors() {
+    const getErrorsBtn = document.getElementById('get-page-errors');
+    const errorTextarea = document.getElementById('error-explainer-input');
+    const errorCountBadge = document.getElementById('error-count');
+    if (!getErrorsBtn || !errorTextarea) return;
+
+    const originalText = getErrorsBtn.textContent;
+    getErrorsBtn.disabled = true;
+    getErrorsBtn.textContent = 'Capturing errors...';
+
+    try {
+      const tab = await getActiveTab();
+      if (!tab || !tab.id) throw new Error('No active tab found');
+      if (!tab.url || !tab.url.startsWith('http')) {
+        throw new Error(`Cannot capture errors from ${tab.url || 'this page'}. Try a regular website.`);
+      }
+
+      try {
+        await sendMessageWithTimeout(tab.id, { action: 'ping' }, 1200);
+      } catch (_) {
+        await injectContentScript(tab.id);
+      }
+
+      const response = await sendMessageWithTimeout(tab.id, { action: 'getErrors' }, 3000);
+      const errors = Array.isArray(response && response.errors) ? response.errors : [];
+
+      if (errors.length > 0) {
+        errorTextarea.value = errors.join('\n');
+        if (errorCountBadge) {
+          errorCountBadge.hidden = false;
+          errorCountBadge.textContent = String(errors.length);
+        }
+        setStatus('error-explainer-status', `Captured ${errors.length} error(s). Asking AI...`);
+        document.getElementById('error-explainer-btn')?.click();
+      } else {
+        errorTextarea.value = 'No console errors found on this page.';
+        if (errorCountBadge) {
+          errorCountBadge.hidden = true;
+          errorCountBadge.textContent = '0';
+        }
+        setStatus('error-explainer-status', 'No errors found. Trigger the bug on the page, then click Get Errors again.');
+      }
+    } catch (error) {
+      if (errorCountBadge) {
+        errorCountBadge.hidden = true;
+        errorCountBadge.textContent = '0';
+      }
+      handleGetErrorsError(error, errorTextarea);
+    } finally {
+      getErrorsBtn.disabled = false;
+      getErrorsBtn.textContent = originalText;
+    }
   }
 
   // Presets (Hide ads, Dark mode, etc.)
@@ -1085,10 +1421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     setStatus('explain-element-status', '');
     const answerEl = document.getElementById('explain-element-answer');
-    if (answerEl) {
-      answerEl.textContent = '';
-      answerEl.classList.add('empty');
-    }
+    if (answerEl) setAnswerWithMarkdown(answerEl, '');
     chrome.runtime.sendMessage({ type: 'MOD_TO_TAB', tabId: tab.id, payload: { type: 'START_EXPLAIN_MODE' } }, (res) => {
       if (chrome.runtime.lastError) setStatus('explain-element-status', serverOfflineMsg(), true);
       else if (res && !res.ok) setStatus('explain-element-status', res.error || 'Failed', true);
@@ -1263,35 +1596,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       showUpgradeModal();
       return;
     }
-    const tab = await getActiveTab();
-    if (!tab) return setStatus('error-explainer-status', 'No active tab.', true);
-    
-    setStatus('error-explainer-status', 'Fetching errors...');
-    chrome.runtime.sendMessage({ type: 'MOD_TO_TAB', tabId: tab.id, payload: { type: 'GET_CONSOLE_ERRORS' } }, (res) => {
-      if (chrome.runtime.lastError) {
-        setStatus('error-explainer-status', chrome.runtime.lastError.message || 'Error fetching. Reload page and try again.', true);
-        return;
-      }
-      if (res && res.errors) {
-        if (res.errors.length === 0) {
-          setStatus('error-explainer-status', 'No errors found. Trigger the bug on the page, then click Get Errors again.');
-        } else {
-          // Get the most recent error
-          const lastError = res.errors[res.errors.length - 1];
-          const errorExplainer = document.getElementById('error-explainer-input');
-          if (errorExplainer) {
-            errorExplainer.value = lastError;
-            setStatus('error-explainer-status', `Captured error (${res.errors.length} total). Asking AI...`);
-            
-            // Automatically click explain
-            const btn = document.getElementById('error-explainer-btn');
-            if (btn) btn.click();
-          }
-        }
-      } else {
-        setStatus('error-explainer-status', 'Failed to get errors. Is the page fully loaded?', true);
-      }
-    });
+    await getPageErrors();
   });
 
   // Slide-over API tester logic
@@ -1402,7 +1707,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (statusEl) { statusEl.textContent = 'Calling...'; statusEl.classList.remove('error'); }
     if (responseEl) responseEl.textContent = '';
     if (apiAiStatus) apiAiStatus.textContent = '';
-    if (apiAiResponse) apiAiResponse.textContent = '';
+    if (apiAiResponse) {
+      apiAiResponse.textContent = '';
+      resetAnswerBlockTimestampForEl(apiAiResponse);
+    }
     lastApiPayload = null;
     updateApiButtons();
 
@@ -1463,24 +1771,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (apiAiStatus) apiAiStatus.textContent = 'Asking AI…';
-    if (apiAiResponse) apiAiResponse.textContent = '';
+    if (apiAiResponse) {
+      apiAiResponse.textContent = '';
+      resetAnswerBlockTimestampForEl(apiAiResponse);
+    }
     try {
       const licenseKey = await getLicenseKey();
       const result = await apiPost({ type: 'aiContext', license_key: licenseKey, action, text, targetFolder: getSelectedProject() });
       if (result.error) {
         if (apiAiStatus) apiAiStatus.textContent = result.error;
-        if (apiAiResponse) apiAiResponse.textContent = '';
+        if (apiAiResponse) {
+          apiAiResponse.textContent = '';
+          resetAnswerBlockTimestampForEl(apiAiResponse);
+        }
         return;
       }
       if (result.data && result.data.error) {
         if (apiAiStatus) apiAiStatus.textContent = result.data.error;
-        if (apiAiResponse) apiAiResponse.textContent = '';
+        if (apiAiResponse) {
+          apiAiResponse.textContent = '';
+          resetAnswerBlockTimestampForEl(apiAiResponse);
+        }
         return;
       }
       const data = result.data;
       const answer = (data && typeof data.answer === 'string') ? data.answer : (data && data.error) || '';
       if (apiAiStatus) apiAiStatus.textContent = '';
-      if (apiAiResponse) apiAiResponse.textContent = answer;
+      if (apiAiResponse) {
+        apiAiResponse.textContent = answer;
+        if (answer) updateAnswerBlockTimestampForEl(apiAiResponse);
+        else resetAnswerBlockTimestampForEl(apiAiResponse);
+      }
       const aiSuccess = data && data.success === true;
       if (aiSuccess) {
         updateTrialUI();
@@ -1568,20 +1889,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     const text = (input && input.value && input.value.trim()) || '';
     if (!text) {
       setStatus('error-explainer-status', 'Paste an error or stack trace first.', true);
-      if (answerEl) answerEl.textContent = '';
+      if (answerEl) setAnswerWithMarkdown(answerEl, '');
       return;
     }
+    const explainBtn = document.getElementById('error-explainer-btn');
+    const prevBtnLabel = explainBtn ? explainBtn.textContent : 'Explain error';
+    if (explainBtn) {
+      explainBtn.disabled = true;
+      explainBtn.textContent = 'Analyzing…';
+    }
     setStatus('error-explainer-status', 'Asking AI…');
-    if (answerEl) answerEl.textContent = '';
+    if (answerEl) answerEl.textContent = 'Analyzing…';
     try {
+      const parsedLines = parseConsoleErrors(text);
       const tab = await getActiveTab();
-      const ctx = (tab && tab.url && !tab.url.startsWith('chrome-extension')) ? `\n[Context: User URL is ${tab.url} - Title: ${tab.title}]` : '';
+      const ctx = buildErrorExplainerContextBlock(tab);
+      const parsedHints = formatParsedConsoleErrorsForPrompt(text);
       const licenseKey = await getLicenseKey();
       log('AI Request', { type: 'aiContext', action: 'explainError' });
-      const result = await apiPost({ type: 'aiContext', license_key: licenseKey, action: 'explainError', text: text + ctx });
+      const result = await apiPost({
+        type: 'aiContext',
+        license_key: licenseKey,
+        action: 'explainError',
+        text: text + parsedHints + ctx
+      });
       if (result.error) {
         setStatus('error-explainer-status', serverOfflineMsg(), true);
-        if (answerEl) answerEl.textContent = '';
+        if (answerEl) setAnswerWithMarkdown(answerEl, '');
         return;
       }
       if (result.data && result.data.error) {
@@ -1591,7 +1925,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       const data = result.data;
       const answer = (data && typeof data.answer === 'string') ? data.answer : (data && data.error) || '';
-      if (answerEl) setAnswerWithMarkdown(answerEl, answer);
+      const countLine =
+        parsedLines.length > 0
+          ? `### Error Analysis\n\n**Lines in paste:** ${parsedLines.length} (non-empty)\n\n`
+          : '';
+      if (answerEl) setAnswerWithMarkdown(answerEl, countLine + answer);
       setStatus('error-explainer-status', '');
       const aiSuccess = data && data.success === true;
       if (aiSuccess) {
@@ -1600,7 +1938,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (e) {
       setStatus('error-explainer-status', serverOfflineMsg(), true);
-      if (answerEl) answerEl.textContent = '';
+      if (answerEl) setAnswerWithMarkdown(answerEl, '');
+    } finally {
+      if (explainBtn) {
+        explainBtn.disabled = false;
+        explainBtn.textContent = prevBtnLabel;
+      }
     }
   });
 
@@ -1611,13 +1954,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const q = (textarea && textarea.value && textarea.value.trim()) || '';
     if (!q) {
       setStatus('dev-status', 'Type a question first.', true);
-      if (answerEl) answerEl.textContent = '';
+      if (answerEl) setAnswerWithMarkdown(answerEl, '');
       return;
     }
     if (!userOpenAiReady) {
       setStatus('dev-status', API_KEY_NOT_CONFIGURED_MSG, true);
       showApiKeyModal();
-      if (answerEl) answerEl.textContent = '';
+      if (answerEl) setAnswerWithMarkdown(answerEl, '');
       return;
     }
     const gate = await canUseProTrialFeature();
@@ -1627,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     setStatus('dev-status', 'Asking…');
-    if (answerEl) answerEl.textContent = '';
+    if (answerEl) setAnswerWithMarkdown(answerEl, '');
     try {
       const tab = await getActiveTab();
       const ctx = (tab && tab.url && !tab.url.startsWith('chrome-extension')) ? `\n[Context: User URL is ${tab.url}]` : '';
@@ -1635,12 +1978,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const result = await apiPost({ type: 'devQuestion', license_key: licenseKey, question: q + ctx });
       if (result.error) {
         setStatus('dev-status', result.error, true);
-        if (answerEl) answerEl.textContent = '';
+        if (answerEl) setAnswerWithMarkdown(answerEl, '');
         return;
       }
       if (result.data && result.data.error) {
         setStatus('dev-status', result.data.error, true);
-        if (answerEl) answerEl.textContent = result.data.error;
+        if (answerEl) setAnswerWithMarkdown(answerEl, result.data.error);
         return;
       }
       const data = result.data;
@@ -1655,11 +1998,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } else {
         setStatus('dev-status', data && data.message ? data.message : 'No answer. Check your OpenAI API key and try again.', true);
-        if (answerEl) answerEl.textContent = '';
+        if (answerEl) setAnswerWithMarkdown(answerEl, '');
       }
     } catch (e) {
       setStatus('dev-status', (e && e.message) || (typeof e === 'string' ? e : 'Error'), true);
-      if (answerEl) answerEl.textContent = '';
+      if (answerEl) setAnswerWithMarkdown(answerEl, '');
     }
   });
 

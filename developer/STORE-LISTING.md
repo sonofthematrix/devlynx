@@ -1,6 +1,6 @@
 # DevLynx AI – Store listing (Chrome Web Store / Edge Add-ons)
 
-Copy the text below into the store submission form. Replace the support URL with your GitHub repo or landing page.
+Copy the text below into the store submission form. Vervang **`[PRIVACY_URL]`** en **`[SUPPORT_URL]`** door echte HTTPS-URL’s.
 
 ---
 
@@ -23,178 +23,170 @@ Copy the text below into the store submission form. Replace the support URL with
 
 5. **Pro (handtest):** feed-server aan → **Options** → **Verify with server** (localhost: lege key = developer bypass, of echte key). Side panel sluiten/heropenen of herladen. In DevTools op het panel-document: `<body class="… plan-pro">`; elementen met **`data-upgrade-link`** (upgrade-box) moeten verborgen zijn.
 
-6. **Permissions / privacy (review):** vul **Permission justification** in (zie sectie hieronder) zodat `<all_urls>` niet als “overbroad” wordt afgewezen; zet de **privacy**-zin in je lange beschrijving.
+6. **Permissions / privacy (review):** vul **Permission justification** in (zie sectie hieronder); zet een **nauwkeurige** privacy-samenvatting in de lange beschrijving + op **`[PRIVACY_URL]`** (BYOK + hosted feed + API tester).
 
 ---
 
-## Store hook (zet dit bovenaan je Detailed description)
+## Chrome Web Store — invulvelden (copy-paste)
 
-**Aanbevolen opening (2 zinnen):**
+### Extension name (store listing title)
 
-1. **Inspect, debug and modify any website with AI.**  
-2. **Fix JavaScript errors instantly and understand complex DOM structures in seconds.**
+**Aanbevolen (positionering: Explain & Debug):**  
+**`DevLynx AI: Explain, Debug & Modify Websites`**
 
-*Extra hook (kort):* **Fix JavaScript errors instantly with AI.** — werkt goed in korte beschrijving of als derde regel.
+*Alternatief (meer “inspect”-SEO):* **`DevLynx AI: Inspect, Debug & Modify Websites`**
 
-Deze zinnen matchen hoe developers zoeken (errors, DOM, debug).
+*(Vermijd een listing die alleen “API debugging” suggereert — het product is breder: Explain Element, errors, mods, API tester, enz.)*
 
-**Review (indicatief):** na upload vaak automatische scan (minuten), daarna handmatige review (vaak 1–3 dagen), daarna publicatie.
+### Short description (max ±132 tekens — tel in het formulier)
 
----
+**Aanbevolen (Explain & Debug):**  
+`Explain UI & debug JS errors with AI. Modify pages, test APIs, dev assistant — BYOK OpenAI.`
 
-## Permissions justification (tegen “Overbroad permissions” / `<all_urls>`)
+**Alternatief:**  
+`AI developer tools: explain elements, debug errors, modify sites & test APIs — BYOK OpenAI.`
 
-Plak in het Chrome Web Store-dashboard bij **Permission justification** (of het veld waar reviewers om uitleg vragen). Volledige uitgebreide versie + per-permission uitleg staat ook in **`developer/CHROME-WEB-STORE-DESCRIPTION.md`**.
+### Single purpose (indien gevraagd in het dashboard)
 
-**Engels (copy-paste):**
+**English:**
 
-DevLynx AI is a developer tool that inspects and modifies the DOM of the current page.
+DevLynx AI is a single-purpose **developer tool**: it helps you **explain, debug, and modify** web pages you work on, with **AI-assisted** features (explain element, error help, Q&A, mods) and an **API tester**. **Free** includes core tools plus a **limited AI trial**; **Pro** (one-time purchase) unlocks **unlimited** use of Pro AI features. Users bring their **own OpenAI API key** (BYOK). The extension uses a **hosted DevLynx feed** for connectivity, licensing, and trial features, and may contact **OpenAI** and **user-entered URLs** (API tester) as described in the privacy policy.
 
-The extension needs access to all URLs because it allows developers to debug and analyze any website they visit.
+### Detailed description
 
-Host access is only used to:
+```
+Inspect, debug, and modify any website — with AI where you enable it.
 
-• inspect page elements  
-• analyze DOM structure  
-• inject developer tools for debugging  
-• apply temporary CSS/JS modifications requested by the user  
-• run the API tester against URLs the user explicitly enters  
+DevLynx AI is an AI-powered developer toolkit in a side panel: explain DOM elements, understand console errors, ask a dev assistant, generate page mods, run an HTTP API tester, capture screenshots, and use context-menu shortcuts on any site.
 
-No browsing data is collected or transmitted to external servers except when the user explicitly sends a request to the local AI server (localhost), or when a Pro user triggers license verification (Gumroad).
+KEY FEATURES
 
-**Privacy (1 zin – ook in Detailed description zetten):**  
-*Privacy: DevLynx AI runs locally and sends AI requests only to a local server controlled by the user.*
+• AI Explain Element (Pro) — Click any element for a clear explanation: role, layout, and practical dev notes.
 
----
+• Error Explainer (Pro) — Paste a stack trace or capture page errors for AI explanations and fix hints.
 
-## Titel
+• AI Dev Assistant — Ask about JavaScript, CSS, browser APIs, debugging, and extension development.
 
-**DevLens AI – Developer Assistant for Any Website**
+• AI Mod Generator — Describe a visual or behavior change; get CSS/JS for the current page.
 
-*Alternatief (meer klikbaar):* **DevLens AI – Explain & Debug Any Website**
+• API Tester — Send GET / POST / PUT / DELETE to endpoints you type in (CORS-friendly from the panel).
 
----
+• Screenshot — Capture the visible tab from the panel.
 
-## Short description (max ±132 tekens)
+• Context menu — DevLynx AI actions on the page or on selected text.
 
-**Aanbevolen (keywords voor review + SEO):**  
-`AI developer tools to inspect elements, debug JavaScript errors and modify any website.`
+FREE VS PRO
 
-**Andere suggesties:**  
-`Fix JavaScript errors instantly with AI. Explain elements, API tester, mod tools & dev assistant.`  
-`Fix JS errors with AI. Inspect, explain elements, test APIs, debug any page.`
+Free: core tools plus a shared AI trial (e.g. 20 successful AI uses — see in-app trial status).  
+Pro: unlimited AI for Explain Element, Error Explainer, and other AI features. Pro is a one-time purchase at $35.99 USD with lifetime updates (sold via Gumroad when the product is available).
 
-**Zoektermen om in de lange beschrijving te verwerken:** inspect element, DOM inspector, debug website, JavaScript errors, modify website.
+SETUP
 
-*(Chrome Web Store: vaak ~132 tekens max — tel even na in het formulier.)*
+Add your OpenAI API key under API & Environment in the panel (BYOK). The default build uses the hosted DevLynx feed; advanced users may point builds at a local feed server (see project documentation).
 
----
+PRIVACY (SUMMARY)
 
-## Volledige beschrijving (Detailed description)
+We do not sell browsing history or run ad profiling. Your OpenAI API key is stored only in this browser on your device — not for resale. The extension contacts our hosted service for health, licensing, and trial enforcement as configured; AI-related requests use your key and may go to OpenAI and/or our feed as needed for each feature. The API tester sends requests only to URLs you explicitly enter. Details: [PRIVACY_URL]
 
-**Fix JavaScript errors instantly with AI.**
+PERMISSIONS
 
-**DevLynx AI – Understand and Debug Any Website Instantly**
+Broad access (<all_urls>) is required so developer features work on any site you debug, and so the API tester can reach URLs you choose. See permission justification in the listing.
 
-**Privacy:** DevLynx AI runs locally and sends AI requests only to a local server controlled by the user.
+SUPPORT
 
-DevLynx AI is a powerful developer assistant that helps you analyze, understand, and modify any website directly in your browser.
+[SUPPORT_URL]
+```
 
-Whether you're inspecting UI components, debugging JavaScript errors, or experimenting with APIs, DevLens gives you AI-powered insights instantly.
+### Permission justification (plak in het dashboard)
 
-**Key Features**
+```
+DevLynx AI is a developer tool that inspects and modifies the DOM of pages the developer is working on.
 
-🔍 **AI Explain Element**  
-Click any element on a webpage and instantly get an explanation of:
-- what the element does
-- its role in the page layout
-- how it affects the user interface
-- useful development insights
+The extension needs access to all URLs because developers debug and analyze any website they visit (their own sites, staging, client projects, documentation, third-party docs, etc.).
 
-Perfect for learning, reverse‑engineering UI components, and understanding complex websites.
+Host access is used only to:
+• inspect page elements and analyze DOM structure
+• inject in-page developer UI (e.g. explain-element mode, selections, mod tooling)
+• apply temporary CSS/JS modifications the user requests (AI Mod Generator / site mods)
+• run the API tester against URLs the user explicitly enters (any origin they type)
 
-🐞 **Error Explainer**  
-Paste a console error or capture errors from the page and let DevLens explain:
-- what the error means
-- why it happens
-- how to fix it
+We do not use this access to harvest browsing history for advertising. The user’s OpenAI API key is stored locally in the extension. Network traffic may go to: OpenAI (when the user configures BYOK), our hosted feed API for license/trial/health and related features, optional license verification (e.g. Gumroad), and user-chosen API tester targets. No silent bulk collection of page content for unrelated purposes.
+```
 
-Great for debugging faster.
+### Privacy policy — punten voor je publieke pagina (`[PRIVACY_URL]`)
 
-🤖 **Developer AI Assistant**  
-Ask DevLens development questions directly inside the browser:
-- JavaScript
-- CSS
-- browser APIs
-- debugging help
-- extension development
+Gebruik een eigen pagina; minimum-inhoud:
 
-🧪 **API Tester**  
-Quickly test API endpoints without leaving the page.
-- GET / POST / PUT / DELETE requests
-- instant responses
-- quick debugging
+- Geen verkoop van browse-historie; geen advertentie-profielen.  
+- **BYOK:** OpenAI-sleutel alleen **lokaal in de browser**; billing bij OpenAI.  
+- **Hosted feed:** licentie, trial, health, eventuele server-kanten van AI/screenshots zoals geïmplementeerd — in het kort benoemen.  
+- **API tester:** verkeer naar **door jou ingevoerde** endpoints; derde partijen vallen onder hun eigen policies.  
+- **Gumroad** (indien actief): aankoop/licentie.  
+- Contact voor privacyvragen.
 
-🎨 **AI Mod Generator**  
-Describe a visual change and DevLens generates CSS or JavaScript modifications for the current page.  
-*Example:* "Make this button bigger and blue" — DevLens generates the code instantly.
+*(Zie ook [STORE-SECTION-3-BRIEFING-NL.md](STORE-SECTION-3-BRIEFING-NL.md) § privacy.)*
 
-📸 **Screenshot Tool**  
-Capture screenshots of the current page directly from the DevLens panel.
+### Pricing (product — géén maandprijs tenzij je model wijzigt)
 
-**Built for Developers**  
-DevLens is designed for:
-- frontend developers
-- web developers
-- extension developers
-- UI engineers
-- people learning web development
+| Plan | Model |
+|------|--------|
+| **Free** | Core tools + **AI trial** (o.a. ~20 succesvolle uses; zie app). |
+| **Pro** | **$35.99 USD** eenmalig · lifetime updates · onbeperkte Pro-AI (zoals in app). |
 
-**Privacy**  
-DevLens does not collect telemetry or user data.  
-AI requests are processed through your own local server and API key.
+*Gebruik **geen** €12/mnd of €99/jr in store-copy tenzij je daar echt op verkoopt — dat botst met de huidige **lifetime**-Pro in de extensie.*
 
-**Version**  
-DevLens v1.1.1
+### Category
 
----
+**Developer Tools** (of **Productivity**)
 
-## Category
+### Suggested screenshots (1280 × 800)
 
-**Developer Tools** (or **Productivity**)
+1. **Explain Element** — panel + “Try it” of resultaat op echte site.  
+2. **Error Explainer** — error + AI-antwoord.  
+3. **API Tester** — method, URL, response (optioneel Gen code / Explain).  
+4. **Side panel overview** — statusbalk (server, OpenAI, plan / trial).  
+5. *(Optioneel)* AI Mod Generator of contextmenu — geen API-keys zichtbaar op PNG’s.
+
+### Store tags / keywords (in lange tekst verweven)
+
+inspect element, DOM inspector, debug website, JavaScript errors, modify website, web debugging, frontend debugging, AI developer assistant, API testing, BYOK, Chrome extension.
+
+### Support URL
+
+Vervang door echte URL, bijvoorbeeld:  
+`https://github.com/your-org/devlens-saas` of je `website/` landing.
 
 ---
 
-## Screenshot ideeën (heel belangrijk)
+## Promo — één zin
 
-Maak 4 screenshots (aanbevolen **1280×800**):
-
-1️⃣ **Explain Element** actief op een website  
-2️⃣ **Error Explainer** met console error  
-3️⃣ **API Tester** – request + response  
-4️⃣ **DevLens sidepanel** – overview
+DevLynx AI: **explain** any element, **debug** errors with AI, then tweak pages and test APIs from one side panel — BYOK OpenAI, free trial, optional Pro lifetime unlock.
 
 ---
 
-## Keywords (vindbaarheid)
+## Positioning (store-safe, current features only)
 
-Gebruik woorden zoals:
-- developer tools
-- debugging
-- AI developer
-- inspect element
-- web development
-- frontend debugging
-- API testing
+Gebruik dit in je listing/website copy zonder toekomstclaims:
+
+- **Web developer focus:** built for frontend/full-stack debug workflows, not generic AI chat.
+- **Real browser context:** explain elements and errors on the actual page you are working on.
+- **All-in-one side panel:** explain element, error capture+explain, dev assistant, API tester, mod generator, screenshot.
+- **Privacy-first BYOK:** users add their own OpenAI key; key stays local in browser storage.
+- **Practical outcomes:** action-oriented fixes and implementation guidance, not only theory.
+
+### Competitive framing (kort, niet agressief)
+
+- **Vs general AI chat:** DevLynx sees page context + extension constraints (MV3, CORS, content/background boundaries).
+- **Vs DevTools only:** DevLynx adds AI explanations and concrete fix guidance on top of native browser debugging.
+- **Vs generic extensions:** DevLynx is focused on web dev workflows instead of marketing/content use cases.
 
 ---
 
-## Support URL
+## Snelle referentie — zoekhooks (bovenaan lange tekst optioneel)
 
-Use your GitHub repo (e.g. `https://github.com/your-org/devlens-saas`) or a landing page. Required for store listing.
+1. **Explain, debug and modify any website with AI.**  
+2. **Understand the DOM and fix JavaScript errors faster.**
 
 ---
 
-## Single sentence for promo / social
-
-DevLens AI: right-click any element or selection on a page and get instant AI explanations, code generation, and error help—using your own OpenAI key and a local server.
+*Manifest-naam/descriptie staan in `src/manifest.json`. Store-titel mag iets uitgebreider zijn dan de korte manifest `name`.*

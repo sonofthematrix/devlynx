@@ -1,0 +1,24 @@
+---
+description: ZenStack v3 init in this repo; keep separate from DevLynx license JWT scripts
+globs: developer/ZENSTACK-V3.md,**/*.zmodel,**/zenstack/**
+alwaysApply: false
+---
+
+# ZenStack v3 in devlens-saas
+
+## Repo layout
+
+- **Extension:** `src/` → `dist/` (Chrome). Do **not** run ZenStack `init` in `src/` or mix ORM into the extension bundle.
+- **Feed API:** `feed-server/` (Node, Vercel serverless). Today **no** SQL DB / ZenStack here.
+- **License JWT (DevLynx):** `scripts/gen-license-jwt-keys.js` + `src/license-jwt-public.js` + `LICENSE_JWT_PRIVATE_KEY` on Vercel. This is **not** ZenStack; do **not** merge or replace with ZenStack `auth()`.
+
+## Adding ZenStack v3
+
+1. Prefer a **dedicated folder** (e.g. `packages/data/` or `backend/zenstack/`) with its **own** `package.json`, then run init **from that directory** so root/extension scripts stay clean.
+2. Use the **v3 / @next** flow from current ZenStack docs, e.g. `npx zenstack@next init` or `npm create zenstack@next …` — verify package names on https://zenstack.dev before running.
+3. After init: add `zen generate` (or equivalent) to that package’s scripts; wire DB URL via `.env` in **that** package only (gitignored).
+4. **Policy + JWT:** ZenStack `auth()` is filled by **your** middleware after you verify **your** JWT/session; DevLynx **Pro/trial** JWTs remain the extension↔feed contract unless you explicitly migrate.
+
+## When this rule applies
+
+- When editing `*.zmodel`, `zenstack/**`, or discussing adding ZenStack to the monorepo.

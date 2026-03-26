@@ -1,4 +1,4 @@
-# Example: What DevLens Explain Element shows
+# Example: What DevLynx Explain Element shows
 
 A realistic example of what beginners see when they click **Explain element** on a button.
 
@@ -14,7 +14,7 @@ User clicks this button:
 </button>
 ```
 
-### DevLens AI explanation (example output)
+### DevLynx AI explanation (example output)
 
 **Component**
 
@@ -55,20 +55,20 @@ A clear, pill-shaped call-to-action button that encourages users to click.
 
 ## Why this helps beginners
 
-Without DevLens, a developer often has to:
+Without DevLynx, a developer often has to:
 
 1. Open Inspect element  
 2. Find the right HTML  
 3. Track down the CSS (and classes)  
 4. Figure out what each part does  
 
-With DevLens it becomes: **click → AI explains**. So it works both as a **learning tool** and a **reverse-engineering tool**.
+With DevLynx it becomes: **click → AI explains**. So it works both as a **learning tool** and a **reverse-engineering tool**.
 
 ---
 
 ## Possible future addition
 
-DevLens could later offer an option to **generate a React (or other) component** from the explained element, for example:
+DevLynx could later offer an option to **generate a React (or other) component** from the explained element, for example:
 
 ```jsx
 export default function Button() {

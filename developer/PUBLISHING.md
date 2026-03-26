@@ -1,4 +1,4 @@
-# Publishing DevLens AI
+# Publishing DevLynx AI
 
 Checklist and steps for publishing the extension to the Chrome Web Store (or Edge Add-ons).
 
@@ -158,6 +158,7 @@ Zie **PROJECT-STRUCTURE.md** in de projectroot: alleen **release/devlens-extensi
 
 - Share on **Reddit** (r/webdev, r/SideProject), **Hacker News** (Show HN), or **X/Twitter** with a short demo or screenshot.
 - Keep **STORE-LISTING.md** and **README.md** in sync with new features for future updates.
+- Keep alleen ideeën voor na launch in **`POST-LAUNCH-FEATURES/`** (zie `README.md` daar; o.a. `ROADMAP-NL.md`, `FEATURES-BACKLOG.md`, `MONETIZATION-IDEAS-NL.md`).
 
 ---
 

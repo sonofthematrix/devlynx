@@ -1,6 +1,6 @@
 /**
  * Authoritative free-trial remaining counts (per device_id + extension_id).
- * - Local / Railway: persist to feed-server/trials.json (see .gitignore).
+ * - Local (Node): persist to feed-server/trials.json (see .gitignore).
  * - Vercel: persist to Blob at internal/devlynx-trials.json when BLOB_READ_WRITE_TOKEN is set.
  * - Vercel without Blob: in-memory only (resets on cold start; not recommended for enforcement).
  */
@@ -9,6 +9,8 @@
 
 const fs = require('fs');
 const path = require('path');
+
+const { blobStoreAccess } = require('./blob-access');
 
 const FILE_PATH = path.join(__dirname, 'trials.json');
 const BLOB_PATHNAME = 'internal/devlynx-trials.json';
@@ -38,15 +40,24 @@ function getTrialPersistenceMode() {
 }
 
 async function loadStoreFromBlob() {
-  const { list } = require('@vercel/blob');
+  const { list, get } = require('@vercel/blob');
   const token = blobToken();
+  const access = blobStoreAccess();
   const r = await list({ prefix: 'internal/devlynx-trials', token, limit: 20 });
   const hit = r.blobs.find((b) => b.pathname === BLOB_PATHNAME);
   if (!hit) return {};
-  const res = await fetch(hit.downloadUrl);
-  if (!res.ok) return {};
   try {
-    const o = JSON.parse(await res.text());
+    let text = '';
+    if (access === 'public') {
+      const res = await fetch(hit.downloadUrl);
+      if (!res.ok) return {};
+      text = await res.text();
+    } else {
+      const got = await get(hit.url, { access: 'private', token });
+      if (!got || got.statusCode !== 200 || !got.stream) return {};
+      text = await new Response(got.stream).text();
+    }
+    const o = JSON.parse(text);
     return o && typeof o === 'object' ? o : {};
   } catch (_) {
     return {};
@@ -56,10 +67,11 @@ async function loadStoreFromBlob() {
 async function saveStoreToBlob(obj) {
   const { put } = require('@vercel/blob');
   await put(BLOB_PATHNAME, JSON.stringify(obj), {
-    access: 'public',
+    access: blobStoreAccess(),
     token: blobToken(),
     contentType: 'application/json',
-    addRandomSuffix: false
+    addRandomSuffix: false,
+    allowOverwrite: true
   });
 }
 

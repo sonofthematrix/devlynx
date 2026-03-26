@@ -5,7 +5,7 @@ importScripts('shared/validate-license-token.js');
 // Runs in the background; survives until idle.
 
 /** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
-const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app';
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app/api';
 /** Replaced at build: `npm run build` / `build:prod`; placeholder → hosted API so unpacked dev works without local feed server. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
@@ -151,7 +151,7 @@ function abortSignalMs(ms) {
 }
 
 /**
- * POST /verify-license with 5s timeout; tries api base candidates (prod: single host).
+ * POST /verify-license with generous timeout (Vercel cold start + Gumroad).
  * Body must only ever contain license_key, device_id, extension_id (never OpenAI keys).
  * @returns {{ kind: 'http', res: Response, data: object, url?: string }|{ kind: 'network', error: Error|null }}
  */
@@ -165,7 +165,7 @@ async function postVerifyLicenseWithTimeout(bodyObj) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(safeBody),
-    signal: abortSignalMs(5000)
+    signal: abortSignalMs(45000)
   };
   let lastErr = null;
   for (const url of licenseApiUrlCandidates('/verify-license')) {
@@ -274,7 +274,7 @@ async function silentProLicenseRefresh() {
           [LICENSE_KEY_STORAGE_KEY]: licenseKey,
           [LICENSE_STATUS_CHECKED_AT_KEY]: Date.now()
         };
-        const newTok = data.token && String(data.token).trim() ? String(data.token).trim() : '';
+        const newTok = licenseTokenFromVerifyData(data);
         if (newTok) patch[LICENSE_TOKEN_STORAGE_KEY] = newTok;
         chrome.storage.local.set(patch);
         console.log('[devlynx-security] license_refresh_success');
@@ -295,6 +295,8 @@ function scheduleLicenseBackgroundRefresh() {
     clearInterval(__licenseRefreshTimerId);
     __licenseRefreshTimerId = null;
   }
+  // Run once soon after startup/install, then every 4h (Pro license JWT TTL is 30d on server).
+  void silentProLicenseRefresh();
   __licenseRefreshTimerId = setInterval(() => {
     silentProLicenseRefresh();
   }, LICENSE_BACKGROUND_REFRESH_MS);

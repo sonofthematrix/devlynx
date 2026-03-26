@@ -111,13 +111,13 @@ No critical storage races. Trial read–write is not atomic but is bounded and s
 
 | Check | Result |
 |-------|--------|
-| Visible UI text contains "DevLens" | **None.** Grep for "DevLens" in src (excluding storage keys/internal IDs): no matches in user-facing strings. |
+| Visible UI text contains "DevLynx" | **None.** Grep for "DevLynx" in src (excluding storage keys/internal IDs): no matches in user-facing strings. |
 | Manifest / panel / options / content | Name/title "DevLynx AI"; toast "DevLynx AI Explain Element"; context menu "DevLynx AI". |
 | Storage keys unchanged | `devlens_plan`, `devlens_license_key`, `devlens_license_verified_at`, etc. left as-is per requirement. |
 | GUMROAD_URL | Product slug `devlynx-ai` (Gumroad URL); matches product name DevLynx AI. |
 | Website | Footer "DevLynx AI"; placeholder "your-username/devlens-saas" for GitHub. |
 
-Branding is consistent; no visible "DevLens" in the extension UI.
+Branding is consistent; no visible "DevLynx" in the extension UI.
 
 ---
 
@@ -141,7 +141,7 @@ Branding is consistent; no visible "DevLens" in the extension UI.
 - [x] Upgrade buttons use openPricingUrl() and GUMROAD_URL
 - [x] Trial decrement only on successful AI (Explain Element + Error Explainer)
 - [x] License Pro only after Verify (Save does not set Pro)
-- [x] No visible "DevLens" in extension UI; storage keys unchanged
+- [x] Geen oude naam **DevLens** meer in user-facing UI; `devlens_*` storage keys ongewijzigd
 - [x] .env in .gitignore
 - [x] Body size limit on feed-server (2 MB, 413)
 - [x] Screenshot reject empty/invalid filename (400)

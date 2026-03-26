@@ -1,4 +1,4 @@
-# DevLens AI – Project structure
+# DevLynx AI – Project structure
 
 Overview of all folders: what is **for Chrome Web Store upload** and what is **not**.
 

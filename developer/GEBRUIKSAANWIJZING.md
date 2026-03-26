@@ -1,4 +1,4 @@
-# Gebruiksaanwijzing DevLens AI
+# Gebruiksaanwijzing DevLynx AI
 
 ## 1. Extensie laden
 
@@ -9,11 +9,11 @@
 
 ## 2. Extensie in de werkbalk (pin)
 
-Als je het icoon van DevLens in de werkbalk wilt zien:
+Als je het icoon van DevLynx in de werkbalk wilt zien:
 
 - Klik op het **puzzelstuk** (Chrome/Edge) of **kubus** (Opera) bij de adresbalk.
-- Zoek **DevLens AI**.
-- Klik op het **pin-icoon** naast DevLens AI zodat de extensie in de werkbalk blijft staan.
+- Zoek **DevLynx AI**.
+- Klik op het **pin-icoon** naast DevLynx AI zodat de extensie in de werkbalk blijft staan.
 
 ## 3. Server starten (nodig voor AI en “Connected”)
 
@@ -29,7 +29,7 @@ Als je het icoon van DevLens in de werkbalk wilt zien:
 
 - Start **start-server-with-ai.bat** in de map **feed-server**.
 - **Laat het zwarte venster open.** Als je het sluit, stopt de server en krijg je “refused to connect” in Opera.
-- In dat venster moet je zien: `DevLens AI feed server (with AI) http://127.0.0.1:2847`. Zie je dat niet, dan is de server niet gestart (bijv. poort al in gebruik).
+- In dat venster moet je zien: `DevLynx AI feed server (with AI) http://127.0.0.1:2847`. Zie je dat niet, dan is de server niet gestart (bijv. poort al in gebruik).
 - Vernieuw daarna de pagina of open het panel opnieuw; klik op de status om opnieuw te verbinden.
 
 **Firewall/antivirus:** Als de server wél draait maar je toch “refused” ziet: sta Node.js of “Command Prompt” toe in je firewall. In Windows Firewall: “Allow an app” → zoek Node.js of cmd en vink het aan voor Particulier netwerk.

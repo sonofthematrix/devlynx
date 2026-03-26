@@ -18,5 +18,8 @@ feed-server/.env.local
 feed-server/licenses.json
 feed-server/licenses.json.tmp
 feed-server/trials.json
+feed-server/activations.json
 
 .DS_Store
+.vercel
+.env*.local

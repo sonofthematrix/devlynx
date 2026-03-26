@@ -5,8 +5,8 @@ In Opera verschijnt het extensie-icoon **niet** automatisch in de toolbar. Dat i
 ## Oplossing
 
 1. Klik op het **Extensions**-icoon (kubus) rechts van de adresbalk.
-2. Zoek **DevLens AI** in de lijst.
-3. Klik op het **pin**-icoon (speld) naast DevLens AI.
+2. Zoek **DevLynx AI** in de lijst.
+3. Klik op het **pin**-icoon (speld) naast DevLynx AI.
 
 Daarna blijft het icoon zichtbaar in de balk.
 

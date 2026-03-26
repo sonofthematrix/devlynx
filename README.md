@@ -23,11 +23,13 @@ Do this **once** per project (or when you add a new environment).
 
 1. Push this repo to **GitHub** (no secrets in git — use `.env` / `.env.local` only on your machine; see `.gitignore`).
 2. Open [Vercel Dashboard](https://vercel.com) → **Add New** → **Project** → import the repo.
-3. **Root Directory:** set to **`feed-server`** (required).
+3. **Root Directory** — choose **one**:
+   - **Repository root** (empty): uses root **`vercel.json`** + **`api/index.js`** / **`api/[[...slug]].js`** (API-only, **no** `public/`).
+   - **`feed-server`**: uses **`feed-server/vercel.json`** + **`api/server/[[...slug]].js`** (also API-only, **no** `public/`).
 4. **Framework Preset:** **Other**.
-5. **Build Command:** `npm run vercel-build` (or leave empty if `vercel.json` already defines it).
-6. **Output Directory:** **`public`** (must match `feed-server/vercel.json`).
-7. Deploy. If the build fails, confirm `feed-server/public/` exists and `package.json` has `vercel-build`.
+5. **Build Command:** leave **empty**, unless root deploy and you rely on **`vercel.json`** `buildCommand` (skips extension build).
+6. **Output Directory:** **leave empty** — do **not** set `public` (that caused *“No Output Directory named public”* when no static folder was produced).
+7. Deploy. Details: **[developer/VERCEL.md](developer/VERCEL.md)**.
 
 ### 1.2 Environment variables
 
@@ -37,7 +39,7 @@ In **Project → Settings → Environment Variables** (Production + Preview as n
 |----------|----------|--------|
 | `OPENAI_API_KEY` | For AI on server | Server-side model calls |
 | `BLOB_READ_WRITE_TOKEN` | Strongly recommended | **Storage → Blob**; screenshots + persistent trial store on Vercel |
-| `GUMROAD_PRODUCT_ID` | If you use Gumroad | License verification |
+| `GUMROAD_PRODUCT_ID` | If you use Gumroad | **Product** ID from Gumroad (not the buyer license key) — see [developer/GUMROAD-PRODUCT-VS-LICENSE-NL.md](developer/GUMROAD-PRODUCT-VS-LICENSE-NL.md). Validate locally: `npm run check:gumroad-product` |
 | `LICENSE_JWT_PRIVATE_KEY` | Optional | **`/trial-token`** / **`/trial-consume`** — pair with public PEM in `src/license-jwt-public.js` ([developer/LICENSE-JWT-KEYS.md](developer/LICENSE-JWT-KEYS.md)) |
 | `OPENAI_MODEL` | Optional | Default `gpt-4o-mini` |
 | `DEV_CODES` | Optional | Server-only bypass keys |

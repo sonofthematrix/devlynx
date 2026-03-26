@@ -1,4 +1,4 @@
-# DevLens AI – Feature summary and key details
+# DevLynx AI – Feature summary and key details
 
 Use this for store listings, landing pages, or quick reference.
 
@@ -6,7 +6,7 @@ Use this for store listings, landing pages, or quick reference.
 
 ## Extension (browser)
 
-- **Name:** DevLens AI  
+- **Name:** DevLynx AI  
 - **Version:** see src/manifest.json (e.g. 1.1.1)  
 - **Manifest:** V3  
 - **UI:** Sidepanel (toolbar icon opens panel).  
@@ -20,7 +20,7 @@ Use this for store listings, landing pages, or quick reference.
 
 | Feature | What it does |
 |--------|----------------|
-| **✨ AI Explain Element** | Explains the HTML/CSS/behavior of an element. **Trigger:** Right-click → DevLens AI → Explain element; or panel “Try it!” then left-click. Choose **Simple** (beginner) or **Technical** (layout, CSS, performance). Result in panel + in-page toast. |
+| **✨ AI Explain Element** | Explains the HTML/CSS/behavior of an element. **Trigger:** Right-click → DevLynx AI → Explain element; or panel “Try it!” then left-click. Choose **Simple** (beginner) or **Technical** (layout, CSS, performance). Result in panel + in-page toast. |
 | **Dev assistant** | Q&A about code, extensions, debugging. Textarea + “Ask AI” → answer in panel. |
 | **Error explainer** | Paste error/stack trace (or “Get Errors” from page) → “Explain error” → AI explanation + fix. |
 | **Last AI result** | Shows result of context-menu actions (Ask AI, Generate code, Explain error). |

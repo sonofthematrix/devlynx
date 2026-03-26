@@ -1,6 +1,6 @@
 # Supported browsers – Load unpacked
 
-DevLens AI is a **Manifest V3** extension and loads in all Chromium-based browsers that support MV3.
+DevLynx AI is a **Manifest V3** extension and loads in all Chromium-based browsers that support MV3.
 
 ---
 
@@ -28,7 +28,7 @@ Use the **same folder** in every browser: **`src`** (development) or **`dist`** 
 
 3. **Opera**  
    Go to `opera://extensions` → turn on **Developer mode** → **Load unpacked** (or **Load extension**) → select the **`src`** or **`dist`** folder.  
-   The icon may not appear in the toolbar by default: click the **Extensions** (cube) icon → find **DevLens AI** → click the **pin** to show it.
+   The icon may not appear in the toolbar by default: click the **Extensions** (cube) icon → find **DevLynx AI** → click the **pin** to show it.
 
 4. **Brave**  
    Go to `brave://extensions` → turn on **Developer mode** → **Load unpacked** → select the **`src`** or **`dist`** folder.

@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "DevLynx AI: Inspect, Debug & Modify Websites",
-  "version": "1.1.2",
-  "description": "AI dev assistant: inspect element, DOM inspector, web debugging, modify website, API tester, frontend debugging, Error Explainer & Explain Element.",
+  "name": "DevLynx AI: Explain, Debug & Modify Websites",
+  "version": "1.1.3",
+  "description": "Explain elements & debug errors with AI. Dev assistant, modify pages, API tester, frontend debugging — Error Explainer & Explain Element (Pro).",
   "action": {
     "default_popup": "sidepanel/panel.html",
-    "default_title": "DevLynx AI – Web debugging & AI tools",
+    "default_title": "DevLynx AI – Explain & debug any website",
     "default_icon": {
       "16": "icons/icon128.png",
       "32": "icons/icon128.png",
@@ -42,6 +42,33 @@
     "service_worker": "background.js"
   },
   "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": [
+        "https://start.opera.com/*",
+        "https://*.opera.com/start*",
+        "https://newtab.opera.com/*",
+        "http://start.opera.com/*",
+        "http://newtab.opera.com/*",
+        "https://addons.opera.com/*"
+      ],
+      "js": ["content/error-capture-bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": [
+        "https://start.opera.com/*",
+        "https://*.opera.com/start*",
+        "https://newtab.opera.com/*",
+        "http://start.opera.com/*",
+        "http://newtab.opera.com/*",
+        "https://addons.opera.com/*"
+      ],
+      "js": ["content/main-world-error-capture.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": ["http://*/*", "https://*/*"],
       "exclude_matches": [

@@ -1,4 +1,4 @@
-# DevLens – Security & code check-up
+# DevLynx – Security & code check-up
 
 Volledige controle op fouten, zwaktes en security. Laatste update: maart 2025.
 

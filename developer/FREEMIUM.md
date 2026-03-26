@@ -31,7 +31,7 @@ DevLynx AI is **freemium**: **Free** = core dev tools + a shared **AI trial**; *
 
 | Deploy | Persistence |
 |--------|-------------|
-| Local / Railway | `feed-server/trials.json` (gitignored) |
+| Local (Node) | `feed-server/trials.json` (gitignored) |
 | Vercel + Blob | Blob object `internal/devlynx-trials.json` (same token as screenshots) |
 | Vercel, no Blob | In-memory only — **not** safe for enforcement (cold starts reset counts). |
 
@@ -61,6 +61,24 @@ In **`src/sidepanel/panel.js`**, `GUMROAD_URL` is the primary upgrade link (`htt
 ### 5. Developer bypass
 
 - Localhost + empty license key → Pro for local dev (see root `README.md`).
+
+---
+
+## Gumroad — alles op één product (checklist)
+
+De **code** is consistent: checkout staat overal op **`https://jcdreamz.gumroad.com/l/devlynx-ai`** (`panel.js`, `options.html`, `website/index.html`). Verificatie gaat via **`POST /verify-license`** op je feed; de server roept **`api.gumroad.com/v2/licenses/verify`** aan met **`GUMROAD_PRODUCT_ID`** + **`license_key`**.
+
+Voor elke **live** verkoop moet dit kloppen (anders: *“license does not exist for the provided product”*):
+
+| Stap | Actie |
+|------|--------|
+| 1 | In Gumroad: **één** actief product waar je keys voor uitgeeft (of bewust migreren: nieuwe `GUMROAD_PRODUCT_ID` + nieuwe kopers). |
+| 2 | Op dat product: **License keys** aan. |
+| 3 | **Product ID** uit Gumroad (niet de URL slug alleen) → **`GUMROAD_PRODUCT_ID`** in **Vercel** (feed project) **én** lokaal `feed-server/.env` hetzelfde. |
+| 4 | Controleren: `GET …/health` → `licenseCheck: true` als ID gezet is. Test: nieuwe testkoop op **dit** product → Verify in Options. |
+| 5 | Oude keys van **ander** Gumroad-product verwachten niet te werken zolang `GUMROAD_PRODUCT_ID` naar het huidige product wijst. |
+
+**Geheimen:** `GUMROAD_PRODUCT_ID` hoort **niet** in git; alleen in env (zie `.gitignore`).
 
 ---
 

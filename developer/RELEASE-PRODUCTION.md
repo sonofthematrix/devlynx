@@ -1,31 +1,21 @@
 # Release to production (checklist)
 
-## 1. Feed server (Railway **or** Vercel)
+## 1. Feed server (Vercel)
 
-**Vercel + Blob:** See **[developer/VERCEL.md](VERCEL.md)** (root `feed-server`, Blob token, custom domain).
+Full steps: **[developer/VERCEL.md](VERCEL.md)** — project root **`feed-server`**, env vars, Blob, custom domain.
 
-**Railway / Docker**
+**Checklist**
 
-1. GitHub repo connected → **Root directory:** `feed-server` (Dockerfile deploy).
-2. **Variables:** `OPENAI_API_KEY`, `GUMROAD_PRODUCT_ID` (if using Gumroad), optional `OPENAI_MODEL`, `DEV_CODES`, optional **`LICENSE_JWT_PRIVATE_KEY`** ( **`GET /trial-token`** / **`POST /trial-consume`** ; pair with public PEM in **`src/license-jwt-public.js`** — **[developer/LICENSE-JWT-KEYS.md](LICENSE-JWT-KEYS.md)** ), optional **`DEVLYNX_TRIAL_LIMIT`**. On Vercel, also **`BLOB_READ_WRITE_TOKEN`** for screenshot + persisted trial store.
+1. GitHub repo → Vercel project → **Root Directory:** `feed-server`.
+2. **Environment variables:** `OPENAI_API_KEY`, `GUMROAD_PRODUCT_ID` (if using Gumroad), optional `OPENAI_MODEL`, `DEV_CODES`, **`BLOB_READ_WRITE_TOKEN`** (screenshots + persisted trials), optional **`LICENSE_JWT_PRIVATE_KEY`** for **`GET /trial-token`** / **`POST /trial-consume`** (pair with public PEM in **`src/license-jwt-public.js`** — **[developer/LICENSE-JWT-KEYS.md](LICENSE-JWT-KEYS.md)** ), optional **`DEVLYNX_TRIAL_LIMIT`**.
 3. **Public HTTPS URL** must match the extension build: set **`DEVLYNX_API_BASE_REPLACE`** in **`scripts/build.js`** (default **`https://devlynx-black.vercel.app`**) and add the same origin to **`src/manifest.json`** `host_permissions`, then rebuild.
 4. Verify: `GET https://<your-host>/health` → `"ok": true`.
 
-## 1b. DNS for `api.devlynx.ai` (registrar / Cloudflare / etc.)
+## 1b. Custom domain (e.g. `api.devlynx.ai`)
 
-Add records in the **devlynx.ai** zone. Use the **exact** target and TXT value from **Railway → your service → Settings → Networking → Custom domain** (they change if you re-add the domain).
+Use **Vercel → Project → Settings → Domains** and follow their DNS instructions (often **CNAME** to `cname.vercel-dns.com`). Details: **[developer/VERCEL.md](VERCEL.md)** §4.
 
-| Type | Name (host) | Value |
-|------|-------------|--------|
-| **CNAME** | `api` | Your Railway hostname, e.g. `xxxx.up.railway.app` (no `https://`) |
-| **TXT** | `_railway-verify.api` | `railway-verify=...` (full string from Railway) |
-
-- **Name field:** Many panels expect `api` or `_railway-verify.api` relative to `devlynx.ai`. If unsure, use the **full** names: `api.devlynx.ai` / `_railway-verify.api.devlynx.ai` only if your DNS UI asks for FQDN.
-- **Cloudflare:** set the **`api`** CNAME to **DNS only** (grey cloud), not Proxied, unless Railway’s docs say otherwise.
-- After saving: wait for propagation (minutes–hours) → click **Verify** in Railway → wait for TLS **Active**.
-- **Do not** commit the TXT verification value to git; copy it fresh from Railway if you re-verify.
-
-**Proceed after DNS:** In Railway, add custom domain **`api.devlynx.ai`** if you haven’t already, complete verification, then open **`https://api.devlynx.ai/health`** in a browser.
+After DNS propagates, open **`https://<your-domain>/health`** in a browser.
 
 ## 2. Extension (store or unpacked)
 

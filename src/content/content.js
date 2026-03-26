@@ -74,7 +74,88 @@
     });
   }
 
+  try { console.log('🔧 DevLynx content script loaded'); } catch (_) {}
+  const capturedErrors = [];
+  /** MAIN-world capture via postMessage (see main-world-error-capture.js). */
+  const mainWorldPostedErrors = [];
+
+  window.addEventListener(
+    'message',
+    function (ev) {
+      try {
+        if (!ev.data || ev.data.source !== '__DEVLYNX_ERR__') return;
+        if (typeof ev.data.detail !== 'string' || !ev.data.detail) return;
+        mainWorldPostedErrors.push(ev.data.detail);
+      } catch (_) {}
+    },
+    false
+  );
+
+  function toErrorText(arg) {
+    if (arg == null) return String(arg);
+    if (typeof arg === 'object') {
+      try { return JSON.stringify(arg, null, 2); } catch (_) { return String(arg); }
+    }
+    return String(arg);
+  }
+
+  function getAllCapturedErrors() {
+    const fromCustomEvent = Array.isArray(window.devlensErrors) ? window.devlensErrors : [];
+    const merged = mainWorldPostedErrors.concat(fromCustomEvent).concat(capturedErrors);
+    const seen = new Set();
+    const out = [];
+    for (let i = 0; i < merged.length; i++) {
+      const s = String(merged[i] || '').trim();
+      if (!s || seen.has(s)) continue;
+      seen.add(s);
+      out.push(merged[i]);
+    }
+    return out;
+  }
+
+  if (typeof console !== 'undefined' && !window.__devlynxContentConsoleHook) {
+    window.__devlynxContentConsoleHook = true;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    const originalLog = console.log;
+
+    console.error = function (...args) {
+      try {
+        capturedErrors.push('[ERROR] ' + args.map(toErrorText).join(' '));
+      } catch (_) {}
+      return originalError.apply(console, args);
+    };
+
+    console.warn = function (...args) {
+      try {
+        capturedErrors.push('[WARN] ' + args.map(toErrorText).join(' '));
+      } catch (_) {}
+      return originalWarn.apply(console, args);
+    };
+
+    console.log = function (...args) {
+      try {
+        const line = args.map(toErrorText).join(' ');
+        if (/error|fail|404|401|403|429|500/i.test(line)) {
+          capturedErrors.push('[LOG] ' + line);
+        }
+      } catch (_) {}
+      return originalLog.apply(console, args);
+    };
+  }
+
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message && message.action === 'getErrors') {
+      const errors = getAllCapturedErrors();
+      sendResponse({ success: true, errors, count: errors.length, timestamp: Date.now() });
+      return true;
+    }
+
+    if (message && message.action === 'ping') {
+      sendResponse({ alive: true, script: 'content.js', timestamp: Date.now() });
+      return true;
+    }
+
     if (message.type === 'GET_SELECTION') {
       const text = window.getSelection ? window.getSelection().toString() : '';
       sendResponse({ text: text || '' });
@@ -139,8 +220,7 @@
     }
 
     if (message.type === 'GET_CONSOLE_ERRORS') {
-      // Return captured errors (needs a small interceptor at the top of the page ideally, but we'll return window.devlensErrors)
-      sendResponse({ errors: window.devlensErrors || [] });
+      sendResponse({ errors: getAllCapturedErrors() });
       return true;
     }
 
@@ -196,15 +276,7 @@
     explainToastEl.classList.add('show');
   }
 
-  // --- Capture console errors from MAIN world ---
-  window.devlensErrors = [];
-  
-  // Listen for errors forwarded from the main world (injected via manifest.json)
-  window.addEventListener('DevLynxErrorCaptured', (e) => {
-    if (e.detail) {
-      window.devlensErrors.push(e.detail);
-    }
-  });
+  // Console errors: captured in isolated `error-capture-bridge.js` + MAIN `main-world-error-capture.js` (manifest).
 
   let lastRightClickTarget = null;
   document.addEventListener('contextmenu', (e) => {

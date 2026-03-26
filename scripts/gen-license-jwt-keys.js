@@ -30,6 +30,19 @@ env +=
   `LICENSE_JWT_PRIVATE_KEY="${oneLine}"\n`;
 fs.writeFileSync(envPath, env);
 
+// Mirror private key to repo root `.env` so you can copy to Vercel without opening gitignored feed-server/.env.
+const rootEnvPath = path.join(repoRoot, '.env');
+if (fs.existsSync(rootEnvPath)) {
+  let rootEnv = fs.readFileSync(rootEnvPath, 'utf8');
+  rootEnv = rootEnv.replace(/^\s*LICENSE_JWT_PRIVATE_KEY=.*\r?\n?/gm, '');
+  rootEnv = rootEnv.replace(/\r\n/g, '\n').replace(/\n+$/, '');
+  rootEnv +=
+    '\n\n# Mirrors feed-server/.env — same value for Vercel (LICENSE_JWT_PRIVATE_KEY). Do not commit.\n' +
+    `LICENSE_JWT_PRIVATE_KEY="${oneLine}"\n`;
+  fs.writeFileSync(rootEnvPath, rootEnv);
+  console.log('OK: root .env updated with same LICENSE_JWT_PRIVATE_KEY (for easy copy to Vercel).');
+}
+
 let pubJs = fs.readFileSync(pubJsPath, 'utf8');
 const pubBlock = `global.DEVLYNX_LICENSE_JWT_PUBLIC_PEM = \`${publicKey.trim()}\`;`;
 if (!/global\.DEVLYNX_LICENSE_JWT_PUBLIC_PEM = /.test(pubJs)) {
@@ -41,4 +54,4 @@ pubJs = pubJs.replace(/global\.DEVLYNX_LICENSE_JWT_PUBLIC_PEM = `[^`]*`;/, pubBl
 fs.writeFileSync(pubJsPath, pubJs);
 
 console.log('OK: feed-server/.env has LICENSE_JWT_PRIVATE_KEY; src/license-jwt-public.js has public PEM.');
-console.log('Next: set the same LICENSE_JWT_PRIVATE_KEY on Railway/Vercel; npm run build:prod (or release).');
+console.log('Next: copy LICENSE_JWT_PRIVATE_KEY from root .env (or feed-server/.env) to Vercel; npm run build:prod (or release).');

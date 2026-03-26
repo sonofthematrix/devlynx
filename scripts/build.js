@@ -1,5 +1,5 @@
 /**
- * DevLens extension build script.
+ * DevLynx AI extension build script.
  * Reads from src/, obfuscates all .js files, copies other assets to dist/.
  * Keeps Manifest V3 compatible (no eval-based obfuscation in service worker).
  */
@@ -14,13 +14,13 @@ const SKIP_OBFUSCATE = process.env.SKIP_OBFUSCATE === '1' || process.argv.includ
 const IS_PRODUCTION_BUILD = process.argv.includes('--production');
 
 /** Default feed API for dev + prod builds. Override: DEVLYNX_FEED_LOCAL=1, --local-feed, or DEVLYNX_FEED_API=https://... */
-const HOSTED_FEED_API = (process.env.DEVLYNX_FEED_API || 'https://devlynx-black.vercel.app').trim();
+const HOSTED_FEED_API = (process.env.DEVLYNX_FEED_API || 'https://devlynx-black.vercel.app/api').trim();
 const LOCAL_FEED_API = 'http://localhost:2847';
 const useLocalFeed =
   process.argv.includes('--local-feed') || process.env.DEVLYNX_FEED_LOCAL === '1';
 const DEVLYNX_API_BASE_REPLACE = useLocalFeed ? LOCAL_FEED_API : HOSTED_FEED_API;
 
-// In dev build (no obfuscation), set DEBUG_MODE = true so [DevLens][*] logs appear in Console
+// In dev build (no obfuscation), set DEBUG_MODE = true so [DevLynx][*] logs appear in Console
 function injectDebugModeIfDev(code) {
   if (SKIP_OBFUSCATE && typeof code === 'string') {
     return code.replace(/\bconst DEBUG_MODE = false\b/g, 'const DEBUG_MODE = true');

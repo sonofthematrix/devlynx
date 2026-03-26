@@ -1,60 +1,73 @@
 # Deploy feed server on Vercel + Blob (screenshots)
 
-The **feed-server** runs as a **Node Serverless Function** at **`api/server/[[...slug]].js`**. Public URLs like `/health` are **rewritten** to `/api/server/health`; the handler strips the `/api/server` prefix from `req.url` before routing (see `getRequestPathname` in `server-with-ai.js`). Screenshots use **Vercel Blob** when `BLOB_READ_WRITE_TOKEN` is set.
+The feed API is **serverless Node** on Vercel. There are **two** valid layouts — pick **one** and match **Root Directory** in the Vercel project.
 
-## 1. Vercel project
+| Root Directory | Entry files | Config |
+|----------------|-------------|--------|
+| **Repository root** (`.`) | `api/index.js`, `api/[[...slug]].js` | `vercel.json` at repo root |
+| **`feed-server`** | `api/server/[[...slug]].js` | `feed-server/vercel.json` |
 
-1. [Vercel Dashboard](https://vercel.com) → **Add New** → **Project** → import your Git repo.
-2. **Root Directory:** `feed-server` (critical).
-3. Framework Preset: **Other** (no framework).
-4. **Build Command:** `npm run vercel-build` (creates `public/` for Vercel’s static output step).
-5. **Output Directory:** `public` — or match **`vercel.json`** (`buildCommand` + `outputDirectory`). The repo includes a tiny **`feed-server/public/index.html`** placeholder; **`/`** is still served by the API via rewrites.
+Public URLs like `/health` are **rewritten** to `/api/...` or `/api/server/...`. The handler strips that prefix in `getRequestPathname` in `server-with-ai.js`. There is **no** `public/` output and **no** `vercel-build` script (API-only).
 
-**Node version:** `feed-server/package.json` sets `"engines": { "node": "20.x" }` so Vercel uses **Node 20** and you avoid the `"node": ">=18"` warning about automatic major upgrades. You can override in **Project → Settings → General → Node.js Version** if needed.
+Screenshots use **Vercel Blob** when `BLOB_READ_WRITE_TOKEN` is set.
 
-## 2. Environment variables
+---
 
-In **Project → Settings → Environment Variables**, add (Production + Preview as needed):
+## A. Vercel project (repository root)
+
+1. [Vercel Dashboard](https://vercel.com) → **Add New** → **Project** → import the Git repo.
+2. **Root Directory:** `.` (leave empty / repository root).
+3. **Framework Preset:** **Other**.
+4. **Build Command:** leave empty, or rely on **`vercel.json`** `buildCommand` (skips the extension build).
+5. **Output Directory:** **leave empty** (not `public`).
+
+**Node:** root `package.json` has `"engines": { "node": ">=20" }`.
+
+## B. Vercel project (`feed-server` only)
+
+1. **Root Directory:** `feed-server`.
+2. **Framework Preset:** **Other**.
+3. **Build Command:** empty.
+4. **Output Directory:** **leave empty**.
+
+**Node:** `feed-server/package.json` has `"engines": { "node": "20.x" }`.
+
+---
+
+## Environment variables
+
+In **Project → Settings → Environment Variables** (Production + Preview as needed):
 
 | Name | Notes |
 |------|--------|
 | `OPENAI_API_KEY` | Required for AI. |
-| `GUMROAD_PRODUCT_ID` | If using Gumroad license checks. |
+| `GUMROAD_PRODUCT_ID` | If using Gumroad (or use `GUMROAD_PRODUCT_PERMALINK` — see `feed-server/.env.example`). |
 | `OPENAI_MODEL` | Optional (`gpt-4o-mini` default in code). |
 | `DEV_CODES` | Optional. |
-| `BLOB_READ_WRITE_TOKEN` | From **Storage → Blob** (below). Screenshots + **authoritative trial counts** (see below). |
-| `LICENSE_JWT_PRIVATE_KEY` | PEM for RS256 — enables **`GET /trial-token`** and **`POST /trial-consume`** (see **`developer/LICENSE-JWT-KEYS.md`**). |
-| `DEVLYNX_TRIAL_LIMIT` | Optional. Initial trial uses per device (default **20**). |
+| `BLOB_READ_WRITE_TOKEN` | **Storage → Blob**; screenshots + trial persistence. |
+| `LICENSE_JWT_PRIVATE_KEY` | PEM for RS256 — Pro JWT + trial endpoints (see **LICENSE-JWT-KEYS.md**). |
+| `DEVLYNX_TRIAL_LIMIT` | Optional (default **20**). |
 
 Do **not** rely on `PORT` on Vercel.
 
-## 3. Vercel Blob
+---
 
-1. In the same Vercel project (or team): **Storage** → **Create Database** → **Blob**.
-2. Attach the store to this project (wizard adds **`BLOB_READ_WRITE_TOKEN`** to env).
-3. Redeploy if the token was added after the first deploy.
+## Vercel Blob
 
-**Behaviour:** When `BLOB_READ_WRITE_TOKEN` is set, `POST /` with `type: "screenshot"` uploads to Blob and returns a public **`path`** URL. Locally or on Railway **without** this token, screenshots still go to **`feed-server/screenshots/`**.
+1. **Storage** → **Create Database** → **Blob** → attach to this project.
+2. Redeploy after the token is added.
 
-**Trial accounting on Vercel:** With **`LICENSE_JWT_PRIVATE_KEY`** + **`BLOB_READ_WRITE_TOKEN`**, trial usage is persisted in Blob as **`internal/devlynx-trials.json`**. Without Blob on Vercel, trial counts are **in-memory only** (unstable); prefer Blob or Railway for strict enforcement.
+**Trial accounting:** With `LICENSE_JWT_PRIVATE_KEY` + `BLOB_READ_WRITE_TOKEN`, trial usage is persisted in Blob. Without Blob on Vercel, trial counts are in-memory only.
 
-## 4. Custom domain
+---
 
-Point **`api.devlynx.ai`** (CNAME to `cname.vercel-dns.com` or as shown in Vercel **Domains**) to this project if you use a custom domain.
+## Custom domain
 
-The extension **`npm run build:prod`** API base is set in **`scripts/build.js`** (default **`https://devlynx-black.vercel.app`**). Add that host under **`host_permissions`** in `src/manifest.json` if you change it.
+Point your API host (e.g. `api.devlynx.ai`) per Vercel **Domains**. The extension build uses **`HOSTED_FEED_API`** in `scripts/build.js`; align **`host_permissions`** in `src/manifest.json`.
 
-## 5. Verify
+---
 
-- `GET https://<your-domain>/health` → JSON with `"ok": true`, `"runtime": "vercel"`, `"blobStorage": true` once Blob is configured, and **`trialJwt` / `trialPersistence`** when trial signing is configured.
-- **Limits:** Serverless has body-size and duration limits; AI routes may need **Pro** for longer **`maxDuration`** (see `vercel.json`).
+## Verify
 
-## 6. Railway vs Vercel
-
-| | Railway / Docker | Vercel |
-|---|------------------|--------|
-| Model | Long-running `node server-with-ai.js` | Per-request `api/server.js` |
-| Screenshots | Local volume / `screenshots/` | **Blob** (when token set) |
-| Rewrites | N/A | `vercel.json` maps `/` → handler |
-
-You can keep **Railway** for simplicity or use **Vercel** for Blob + serverless; use **one** production URL in the extension build.
+- `GET https://<your-domain>/health` → JSON with `"ok": true`, `"runtime": "vercel"` when deployed.
+- Serverless limits: see `maxDuration` in the active `vercel.json` (`api/**/*.js` or `api/server/[[...slug]].js`).

@@ -1,4 +1,4 @@
-# DevLens AI – Product & project summary
+# DevLynx AI – Product & project summary
 
 Single reference for what the product is, how it’s built, and how the repo is organized.
 
@@ -6,11 +6,11 @@ Single reference for what the product is, how it’s built, and how the repo is 
 
 ## 1. What the product is
 
-**DevLens AI** is a **Chrome (and Chromium) extension** that acts as an **AI developer assistant** on any website.
+**DevLynx AI** is a **Chrome (and Chromium) extension** that acts as an **AI developer assistant** on any website.
 
 - **For users:** Install the extension (default build talks to the **hosted** feed API on Vercel). They can add their **OpenAI API key** in the extension for BYOK flows; optional **local feed-server** is for advanced/self-hosted setups.
 - **Model:** **Freemium.** Free: Dev assistant, AI Mod Generator, API Tester, Screenshot, context menu. **Pro** (Gumroad license): AI Explain Element, Error explainer.
-- **Privacy:** No telemetry. AI calls go from the user’s machine to their OpenAI key via the local server; no data to DevLens.
+- **Privacy:** No telemetry from us. AI uses your **OpenAI** key (BYOK); hosted feed is for license/trial/health—not for selling browsing data.
 
 **Browsers:** Chrome, Edge, Opera, Brave (Manifest V3).
 

@@ -1,4 +1,4 @@
-# Security – DevLens AI (Chrome Store project)
+# Security – DevLynx AI (Chrome Store project)
 
 Overzicht van wat er aan security aanwezig is.
 
@@ -44,4 +44,4 @@ Overzicht van wat er aan security aanwezig is.
 
 ---
 
-**Samenvatting:** API keys en gevoelige data zitten alleen lokaal op de server; de extensie heeft een expliciete CSP en praat alleen met localhost. Geen telemetrie; data gaan niet naar DevLens.
+**Samenvatting:** API keys en gevoelige data zitten alleen lokaal op de server; de extensie heeft een expliciete CSP en praat alleen met localhost. Geen telemetrie; data gaan niet naar DevLynx.

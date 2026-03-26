@@ -9,7 +9,7 @@ const LICENSE_TOKEN_STORAGE_KEY = 'devlynx_license_token';
 const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const DEVICE_ID_STORAGE_KEY = 'devlynx_device_id';
 /** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
-const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app';
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app/api';
 /** Replaced at build; placeholder → hosted Vercel feed API by default. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
@@ -46,6 +46,35 @@ function serverOfflineMsg() {
     return "Can't reach the DevLynx API (" + b + '). Check deployment and /health.';
   }
   return "DevLynx feed server isn't running. In the feed-server folder run npm start.";
+}
+
+const LICENSE_DEVICE_CAP = 3;
+
+function optionsVerifyErrorMessage(data) {
+  const d = data || {};
+  const code = d.error_code ? String(d.error_code) : '';
+  if (code === 'device_limit') {
+    return (
+      'Device limit: license already on ' +
+      LICENSE_DEVICE_CAP +
+      ' devices (90-day rolling window). Wait, contact support, or use Free.'
+    );
+  }
+  if (code === 'invalid_key') {
+    const detail = (d.error && String(d.error).trim()) || '';
+    if (
+      detail &&
+      !/^invalid license/i.test(detail) &&
+      !/^no license key/i.test(detail)
+    ) {
+      return 'Invalid license key — ' + detail;
+    }
+    return 'Invalid license key. Check your purchase email or buy a license.';
+  }
+  if (code === 'bad_request') {
+    return (d.error && String(d.error).trim()) || 'Missing license or device id. Reload the extension page and try again.';
+  }
+  return (d.error && String(d.error).trim()) || 'Verification failed.';
 }
 
 function setStatus(message, type) {
@@ -175,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const verifySignal =
         typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
-          ? AbortSignal.timeout(5000)
+          ? AbortSignal.timeout(45000)
           : undefined;
       for (const vUrl of licenseUrlCandidates('/verify-license')) {
         try {
@@ -233,13 +262,18 @@ document.addEventListener('DOMContentLoaded', () => {
           updatePlanDisplay('pro');
           const upgradeHint = document.getElementById('options-upgrade-link');
           if (upgradeHint) upgradeHint.style.display = 'none';
-          setLicenseStatus('✅ Pro activated!', 'success');
+          let licMsg = '✅ Pro activated!';
+          if (typeof data.devices_used === 'number' && data.devices_used >= 2) {
+            licMsg +=
+              ' On ' + data.devices_used + ' of ' + LICENSE_DEVICE_CAP + ' devices.';
+          }
+          setLicenseStatus(licMsg, 'success');
           setStatus('License valid. Pro features are now enabled.', 'success');
         });
       } else {
-        const msg = data.error || '❌ Invalid license key.';
-        setLicenseStatus(msg.startsWith('❌') ? msg : '❌ ' + (data.error || 'Invalid license key.'), 'error');
-        setStatus(data.error || 'Verification failed.', 'error');
+        const friendly = optionsVerifyErrorMessage(data);
+        setLicenseStatus(friendly.startsWith('❌') ? friendly : '❌ ' + friendly, 'error');
+        setStatus(friendly, 'error');
       }
     } catch (err) {
       setLicenseStatus('Server error during verification.', 'error');

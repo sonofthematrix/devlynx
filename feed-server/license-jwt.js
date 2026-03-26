@@ -27,7 +27,7 @@ function signLicenseToken(privateKeyPem, payload, opts) {
   if (secret && !privateKeyPem) {
     return jwt.sign(body, secret, {
       algorithm: 'HS256',
-      expiresIn: '12h',
+      expiresIn: '30d',
       issuer: TOKEN_ISSUER,
       audience: TOKEN_AUDIENCE
     });
@@ -37,7 +37,7 @@ function signLicenseToken(privateKeyPem, payload, opts) {
   }
   return jwt.sign(body, privateKeyPem, {
     algorithm: 'RS256',
-    expiresIn: '12h',
+    expiresIn: '30d',
     issuer: TOKEN_ISSUER,
     audience: TOKEN_AUDIENCE
   });

@@ -1,4 +1,4 @@
-# DevLens – Full flow audit and production-ready improvements
+# DevLynx – Full flow audit and production-ready improvements
 
 Audit of the extension flow (startup → trial → license → Explain Element / Error Explainer → AI request → trial decrement → UI) and changes made for production and debuggability.
 
@@ -36,7 +36,7 @@ Audit of the extension flow (startup → trial → license → Explain Element /
 ### 2.3 Inconsistent server-offline messaging
 
 - Different copy in panel, options, and background for “server not running”.
-- **Fix:** Introduced shared constant `SERVER_OFFLINE_MSG`: *"DevLens server not running. Start start-server-with-ai.bat in the feed-server folder."* Used for:
+- **Fix:** Introduced shared constant `SERVER_OFFLINE_MSG`: *"DevLynx server not running. Start start-server-with-ai.bat in the feed-server folder."* Used for:
   - Panel: Explain Element failure, Error Explainer failure, generate-mod failure, loadProjects hint.
   - Options: Verify catch.
   - Background: setLastError for Explain Element failure.
@@ -65,18 +65,18 @@ Audit of the extension flow (startup → trial → license → Explain Element /
 
 **Structured logs** (when `DEBUG_MODE` is true):
 
-- `[DevLens][Trial]` – e.g. `initialized to 20`, `remaining: 17`, `decremented (Explain Element), remaining: 16`.
-- `[DevLens][License]` – e.g. `pro – feature allowed`.
-- `[DevLens][Gate]` – e.g. `allowed (trial)`, `blocked – trial ended`.
-- `[DevLens][Explain Element]` – `allowed` / `blocked`.
-- `[DevLens][AI Request]` – e.g. `{ type: 'aiContext', action: 'explainError' }` (panel); `Explain Element success` / `Explain Element failed` (background).
+- `[DevLynx][Trial]` – e.g. `initialized to 20`, `remaining: 17`, `decremented (Explain Element), remaining: 16`.
+- `[DevLynx][License]` – e.g. `pro – feature allowed`.
+- `[DevLynx][Gate]` – e.g. `allowed (trial)`, `blocked – trial ended`.
+- `[DevLynx][Explain Element]` – `allowed` / `blocked`.
+- `[DevLynx][AI Request]` – e.g. `{ type: 'aiContext', action: 'explainError' }` (panel); `Explain Element success` / `Explain Element failed` (background).
 
 Helper:
 
 ```js
 function log(tag, ...args) {
   if (DEBUG_MODE && typeof console !== 'undefined' && console.log) {
-    console.log('[DevLens][' + tag + ']', ...args);
+    console.log('[DevLynx][' + tag + ']', ...args);
   }
 }
 ```
@@ -130,7 +130,7 @@ Usage: open sidepanel → right‑click panel → Inspect → Console → run `a
    - Same for Error Explainer: paste text, click Explain; confirm same message and no decrement.
 
 3. **Debug**
-   - Build with `npm run build:dev`, load `dist/`, open sidepanel and Inspect → Console. Confirm `[DevLens][Trial]`, `[DevLens][License]`, etc., when using features.
+   - Build with `npm run build:dev`, load `dist/`, open sidepanel and Inspect → Console. Confirm `[DevLynx][Trial]`, `[DevLynx][License]`, etc., when using features.
    - Run `await devlensDebug()` and check `trialUsesRemaining`, `plan`, `serverStatus`.
 
 This keeps the full flow correct, trial fair (no decrement on failure), messaging consistent, and debugging possible in dev builds while keeping production builds obfuscated and quiet.

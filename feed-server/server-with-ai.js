@@ -1,8 +1,8 @@
 /**
  * DevLynx AI feed server — OpenAI + HTTP API.
  * Run from feed-server: node server-with-ai.js
- * Railway: OPENAI_API_KEY + PORT.
- * Vercel: OPENAI_API_KEY + BLOB_READ_WRITE_TOKEN (screenshots); see vercel.json + api/server/[[...slug]].js.
+ * Local: OPENAI_API_KEY + optional PORT.
+ * Vercel: OPENAI_API_KEY + BLOB_READ_WRITE_TOKEN (screenshots). Deploy: repo-root vercel.json + /api/*, or feed-server/vercel.json + /api/server/*.
  */
 
 const path = require('path');
@@ -12,10 +12,12 @@ const http = require('http');
 const https = require('https');
 const licenseJwt = require('./license-jwt');
 const trialStore = require('./trial-store');
+const activationStore = require('./activation-store');
+const { blobStoreAccess } = require('./blob-access');
 const LICENSE_JWT_ISSUER = licenseJwt.TOKEN_ISSUER;
 const LICENSE_JWT_AUDIENCE = licenseJwt.TOKEN_AUDIENCE;
 
-// Load .env: use dotenv if available, else read file manually
+// Load .env only (not .env.local — see feed-server/.env.local comment template)
 try {
   const dotenv = require('dotenv');
   dotenv.config({ path: path.join(__dirname, '.env') });
@@ -31,10 +33,16 @@ function stripEnvValue(s) {
 
 let OPENAI_API_KEY = stripEnvValue(process.env.OPENAI_API_KEY || '');
 let OPENAI_MODEL = (process.env.OPENAI_MODEL || 'gpt-4o-mini').trim();
-let GUMROAD_PRODUCT_ID = (process.env.GUMROAD_PRODUCT_ID || '').trim().replace(/\r$/, '');
+let GUMROAD_PRODUCT_ID = stripEnvValue(process.env.GUMROAD_PRODUCT_ID || '');
+/** Slug from product URL …/l/{slug} — Gumroad verify accepts product_permalink instead of product_id. */
+let GUMROAD_PRODUCT_PERMALINK = stripEnvValue(process.env.GUMROAD_PRODUCT_PERMALINK || '');
 let DEV_CODES = (process.env.DEV_CODES || '').split(',').map((s) => s.trim()).filter(Boolean);
 
-/** Local default; Railway overrides via process.env.PORT. */
+function gumroadVerifyConfigured() {
+  return !!(GUMROAD_PRODUCT_PERMALINK || GUMROAD_PRODUCT_ID);
+}
+
+/** Local default; optional `PORT` in `.env` or `process.env.PORT`. */
 const DEFAULT_PORT = 8080;
 let PORT = DEFAULT_PORT;
 try {
@@ -47,7 +55,11 @@ try {
   if (modelMatch && modelMatch[1]) OPENAI_MODEL = modelMatch[1].trim();
   if (!GUMROAD_PRODUCT_ID) {
     const gMatch = envContent.match(/GUMROAD_PRODUCT_ID=(.*?)(?:\r?\n|$)/);
-    if (gMatch && gMatch[1]) GUMROAD_PRODUCT_ID = gMatch[1].trim().replace(/\r$/, '');
+    if (gMatch && gMatch[1]) GUMROAD_PRODUCT_ID = stripEnvValue(gMatch[1]);
+  }
+  if (!GUMROAD_PRODUCT_PERMALINK) {
+    const pMatch = envContent.match(/GUMROAD_PRODUCT_PERMALINK=(.*?)(?:\r?\n|$)/);
+    if (pMatch && pMatch[1]) GUMROAD_PRODUCT_PERMALINK = stripEnvValue(pMatch[1]);
   }
   if (DEV_CODES.length === 0) {
     const dMatch = envContent.match(/DEV_CODES=(.*?)(?:\r?\n|$)/);
@@ -85,6 +97,22 @@ function signTrialJwt(deviceId, extensionId, remaining) {
   });
 }
 
+/** Pro license JWT for POST /verify-license (extension verifies with RS256 public PEM). */
+function trySignProLicenseToken(licenseKey, deviceId, extensionId) {
+  if (!LICENSE_JWT_PRIVATE_KEY_PEM) return null;
+  try {
+    return licenseJwt.signLicenseToken(LICENSE_JWT_PRIVATE_KEY_PEM, {
+      license_key: String(licenseKey || '').trim(),
+      device_id: String(deviceId || '').trim(),
+      extension_id: String(extensionId || '').trim(),
+      plan: 'pro'
+    });
+  } catch (e) {
+    console.error('signProLicenseToken:', e.message);
+    return null;
+  }
+}
+
 function readQueryParam(req, name) {
   try {
     const u = new URL(req.url || '/', 'http://feed.local');
@@ -113,7 +141,7 @@ try { fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true }); } catch (_) {}
 
 /**
  * Pathname for routing (extension uses `/health`, `/projects`, `POST /`, etc.).
- * - Vercel: public URL is rewritten to `/api/server` or `/api/server/...`; `req.url` keeps that path — strip the prefix.
+ * - Vercel: rewritten to `/api/...` (root deploy) or `/api/server/...` (feed-server deploy); strip that prefix.
  * - Legacy: query `?p=` from older vercel.json rewrites (optional).
  */
 function getRequestPathname(req) {
@@ -122,11 +150,13 @@ function getRequestPathname(req) {
     const u = new URL(raw, 'http://feed.local');
     let pathOnly = u.pathname || '/';
 
-    const apiPrefix = '/api/server';
-    if (pathOnly === apiPrefix || pathOnly.startsWith(apiPrefix + '/')) {
-      const rest = pathOnly === apiPrefix ? '' : pathOnly.slice((apiPrefix + '/').length);
-      if (!rest) return '/';
-      return '/' + rest.replace(/^\/+/, '').replace(/\/+/g, '/');
+    const apiPrefixes = ['/api/server', '/api'];
+    for (const apiPrefix of apiPrefixes) {
+      if (pathOnly === apiPrefix || pathOnly.startsWith(apiPrefix + '/')) {
+        const rest = pathOnly === apiPrefix ? '' : pathOnly.slice((apiPrefix + '/').length);
+        if (!rest) return '/';
+        return '/' + rest.replace(/^\/+/, '').replace(/\/+/g, '/');
+      }
     }
 
     const fromQuery = u.searchParams.get('p');
@@ -150,7 +180,7 @@ async function persistScreenshot(baseFilename, imageBase64) {
     const { put } = require('@vercel/blob');
     const objectPathname = `screenshots/${Date.now()}_${baseFilename}`;
     const blob = await put(objectPathname, buf, {
-      access: 'public',
+      access: blobStoreAccess(),
       token: process.env.BLOB_READ_WRITE_TOKEN.trim(),
       contentType: 'image/png',
       addRandomSuffix: true
@@ -207,16 +237,38 @@ function parseBody(req) {
   });
 }
 
+/** Short log line for Gumroad product env (no full secrets). */
+function gumroadProductLogRef() {
+  if (GUMROAD_PRODUCT_PERMALINK) {
+    return { mode: 'product_permalink', ref: GUMROAD_PRODUCT_PERMALINK, refLen: GUMROAD_PRODUCT_PERMALINK.length };
+  }
+  const id = GUMROAD_PRODUCT_ID;
+  if (!id) return { mode: 'none', ref: '', refLen: 0 };
+  const ref =
+    id.length <= 10 ? `(len=${id.length})` : `${id.slice(0, 4)}…${id.slice(-4)} (len=${id.length})`;
+  return { mode: 'product_id', ref, refLen: id.length };
+}
+
 /** Verify a Gumroad license key. Returns { valid: true } or { valid: false, error: string }. */
 function verifyGumroadLicense(licenseKey) {
-  if (!GUMROAD_PRODUCT_ID || !licenseKey || typeof licenseKey !== 'string') {
+  if (!gumroadVerifyConfigured() || !licenseKey || typeof licenseKey !== 'string') {
     return Promise.resolve({ valid: false, error: 'License verification not configured or no key provided.' });
   }
   const key = licenseKey.trim();
   if (!key) return Promise.resolve({ valid: false, error: 'License key is empty.' });
 
+  const keyPrefix = key.length >= 8 ? key.slice(0, 8) : key;
+  console.log('[gumroad-verify] start', {
+    ...gumroadProductLogRef(),
+    licenseKeyPrefix: keyPrefix + (key.length > 8 ? '…' : '')
+  });
+
   const form = new URLSearchParams();
-  form.append('product_id', GUMROAD_PRODUCT_ID);
+  if (GUMROAD_PRODUCT_PERMALINK) {
+    form.append('product_permalink', GUMROAD_PRODUCT_PERMALINK);
+  } else {
+    form.append('product_id', GUMROAD_PRODUCT_ID);
+  }
   form.append('license_key', key);
   form.append('increment_uses_count', 'false');
   const body = form.toString();
@@ -236,19 +288,38 @@ function verifyGumroadLicense(licenseKey) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        const status = res.statusCode;
+        console.log('[gumroad-verify] http status', status);
         try {
           const json = JSON.parse(data);
+          const safeOut = {
+            success: json.success === true,
+            message: typeof json.message === 'string' ? json.message : undefined,
+            error: typeof json.error === 'string' ? json.error : undefined,
+            uses: typeof json.uses === 'number' ? json.uses : undefined
+          };
+          console.log('[gumroad-verify] response', safeOut);
           if (json.success === true) {
             resolve({ valid: true, uses: json.uses });
           } else {
-            resolve({ valid: false, error: json.message || 'License key invalid or expired.' });
+            const msg =
+              (typeof json.message === 'string' && json.message) ||
+              (typeof json.error === 'string' && json.error) ||
+              'License key invalid, expired, or not for this product.';
+            resolve({ valid: false, error: msg });
           }
         } catch (e) {
-          resolve({ valid: false, error: 'Invalid response from license server.' });
+          console.error('[gumroad-verify] json parse error', e.message, 'body head:', data.slice(0, 200));
+          resolve({
+            valid: false,
+            error:
+              'Invalid response from Gumroad. Check GUMROAD_PRODUCT_ID or GUMROAD_PRODUCT_PERMALINK on the server matches your product.'
+          });
         }
       });
     });
     req.on('error', (e) => {
+      console.error('[gumroad-verify] request error', e.message);
       resolve({ valid: false, error: 'Could not reach license server: ' + e.message });
     });
     req.write(body);
@@ -256,11 +327,11 @@ function verifyGumroadLicense(licenseKey) {
   });
 }
 
-/** AI request types that require a valid Gumroad license when GUMROAD_PRODUCT_ID is set. */
+/** AI request types that require a valid Gumroad license when Gumroad verify is configured. */
 const AI_TYPES_REQUIRING_LICENSE = ['devQuestion', 'aiContext', 'generateMod'];
 
 async function requireLicenseForAI(body) {
-  if (!GUMROAD_PRODUCT_ID) return null;
+  if (!gumroadVerifyConfigured()) return null;
   const key = (body && body.license_key) ? String(body.license_key).trim() : '';
   const result = await verifyGumroadLicense(key);
   if (result.valid) return null;
@@ -395,7 +466,7 @@ async function feedServerHandler(req, res) {
       ai: !!OPENAI_API_KEY,
       apiKeyConfigured: !!OPENAI_API_KEY,
       model: OPENAI_MODEL || 'gpt-4o-mini',
-      licenseCheck: !!GUMROAD_PRODUCT_ID,
+      licenseCheck: gumroadVerifyConfigured(),
       licenseJwtIssuer: LICENSE_JWT_ISSUER,
       licenseJwtAudience: LICENSE_JWT_AUDIENCE,
       trialJwt: !!LICENSE_JWT_PRIVATE_KEY_PEM,
@@ -457,35 +528,106 @@ async function feedServerHandler(req, res) {
   if (req.method === 'POST' && pathname === '/verify-license') {
     const body = await parseBody(req);
     const licenseKey = (body && body.license_key != null) ? String(body.license_key).trim() : '';
+    const deviceId = (body && body.device_id != null) ? String(body.device_id).trim() : '';
+    const extensionId = (body && body.extension_id != null) ? String(body.extension_id).trim() : '';
 
     // 1) Developer bypass: from localhost with no license key → Pro for local development
     const remote = req.socket.remoteAddress || '';
     const isLocalhost = remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1';
     if (isLocalhost && !licenseKey) {
-      send(res, 200, { valid: true, ok: true, type: 'developer' });
+      const devTok = trySignProLicenseToken('developer-local', deviceId, extensionId);
+      if (devTok) {
+        send(res, 200, { valid: true, ok: true, type: 'developer', license_token: devTok, token: devTok });
+      } else {
+        send(res, 200, { valid: true, ok: true, type: 'developer' });
+      }
       return;
     }
 
     // 2) Dev/friend codes (server-only; not in extension)
     if (licenseKey && DEV_CODES.length > 0 && DEV_CODES.includes(licenseKey)) {
-      send(res, 200, { valid: true, ok: true, type: 'dev' });
+      const act = await activationStore.tryActivate(licenseKey, deviceId);
+      if (!act.ok) {
+        send(res, 200, {
+          ok: false,
+          valid: false,
+          error: act.error,
+          error_code: act.error_code
+        });
+        return;
+      }
+      const license_token = trySignProLicenseToken(licenseKey, deviceId, extensionId);
+      if (!license_token) {
+        send(res, 200, {
+          ok: false,
+          valid: false,
+          error:
+            'Dev code accepted but server cannot sign a Pro JWT. Set LICENSE_JWT_PRIVATE_KEY on Vercel (must match public key in the extension — see developer/LICENSE-JWT-KEYS.md).'
+        });
+        return;
+      }
+      send(res, 200, {
+        valid: true,
+        ok: true,
+        type: 'dev',
+        license_token,
+        token: license_token,
+        devices_used: act.devices_used
+      });
       return;
     }
 
     // 3) Gumroad license keys
     if (!licenseKey) {
-      send(res, 200, { ok: false, error: 'No license key provided.' });
+      send(res, 200, { ok: false, valid: false, error: 'No license key provided.', error_code: 'invalid_key' });
       return;
     }
-    if (!GUMROAD_PRODUCT_ID) {
-      send(res, 200, { ok: false, error: 'License verification not configured on server. Set GUMROAD_PRODUCT_ID in feed-server/.env.' });
+    if (!gumroadVerifyConfigured()) {
+      send(res, 200, {
+        ok: false,
+        error:
+          'License verification not configured on server. Set GUMROAD_PRODUCT_ID or GUMROAD_PRODUCT_PERMALINK in feed-server/.env (and on Vercel).'
+      });
       return;
     }
     const result = await verifyGumroadLicense(licenseKey);
     if (result.valid) {
-      send(res, 200, { ok: true, valid: true, type: 'gumroad', message: 'License valid.' });
+      const act = await activationStore.tryActivate(licenseKey, deviceId);
+      if (!act.ok) {
+        send(res, 200, {
+          ok: false,
+          valid: false,
+          error: act.error,
+          error_code: act.error_code
+        });
+        return;
+      }
+      const license_token = trySignProLicenseToken(licenseKey, deviceId, extensionId);
+      if (!license_token) {
+        send(res, 200, {
+          ok: false,
+          valid: false,
+          error:
+            'License valid but server cannot sign a Pro JWT. Set LICENSE_JWT_PRIVATE_KEY on Vercel (same key pair as src/license-jwt-public.js — see developer/LICENSE-JWT-KEYS.md).'
+        });
+        return;
+      }
+      send(res, 200, {
+        ok: true,
+        valid: true,
+        type: 'gumroad',
+        message: 'License valid.',
+        license_token,
+        token: license_token,
+        devices_used: act.devices_used
+      });
     } else {
-      send(res, 200, { ok: false, error: result.error || 'Invalid license.' });
+      send(res, 200, {
+        ok: false,
+        valid: false,
+        error: result.error || 'Invalid license.',
+        error_code: 'invalid_key'
+      });
     }
     return;
   }
@@ -623,10 +765,46 @@ async function feedServerHandler(req, res) {
         const explainElementTechnical = 'Explain this HTML element for an experienced developer. Use this structure in markdown: (1) Component/selector — tag and main classes. (2) Layout — flexbox/grid/position. (3) Key CSS — rules that matter (code block). (4) Behaviour — animations, JS hooks if visible. (5) Performance/accessibility hints if relevant. Be concise; use **bold** and code blocks.';
         const prompts = {
           ask: 'Explain or fix this (code/JSON/error). Be concise.',
-          explainError: 'Short explanation of this error and one concrete fix. No preamble.',
+          explainError: 'Analyze Chrome extension console errors and provide specific, actionable fixes with concrete code snippets.',
           generateRequestCode: 'Return only code: one block with fetch(), one with axios, one with Python requests for this URL/method. No prose.',
           explainEndpoint: 'In one short paragraph, explain what this API endpoint does and the meaning of the response.'
         };
+        if (action === 'explainError') {
+          userContent = `You are helping a Chrome extension developer. The input below may include raw console output, auto-parsed HTTP hints (JSON), and the active tab URL/title.
+
+INPUT:
+${t}
+
+Analyze these HTTP/console errors in that order when relevant:
+
+For EACH distinct error or failed request:
+1. Identify whether it is **authentication (401/403)**, **rate limiting (429)**, **CORS**, **network**, or something else.
+2. Explain **WHY** it happens in **browser extensions** (MV3 service worker vs content script vs extension page; which context runs fetch; CSP/CORS differences vs a normal webpage).
+3. Give **extension-specific fixes**: \`manifest.json\` (\`host_permissions\`, \`permissions\`), \`chrome.storage\` / Options UI for API keys (never hard-code in git), where to set \`Authorization\` / custom headers (and MV3 rules: e.g. declarativeNetRequest vs fetch in SW).
+4. For **429**: mention **Retry-After** if present and show **exponential backoff** (concise code snippet).
+5. Include **concrete JavaScript** snippets for the fix, not generic REST advice.
+
+Focus on:
+- Proper auth headers from the correct extension context
+- Backoff for rate limits
+- Correct manifest permissions for the API origin
+- chrome.storage for API keys
+
+FORMAT (markdown):
+
+### Error analysis
+
+**Error 1** — [URL or short description]
+- **Type**: …
+- **Cause** (extension-specific): …
+- **Fix**:
+\`\`\`javascript
+// …
+\`\`\`
+- **Prevention**: …
+
+Repeat for further errors. Be actionable, not generic.`;
+        }
         const systemPrompt = action === 'explainElement'
           ? (explainMode === 'technical' ? explainElementTechnical : explainElementSimple)
           : (prompts[action] || prompts.ask);

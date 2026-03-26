@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevLynx AI – AI Developer Assistant</title>
+  <title>DevLynx AI – Explain & Debug</title>
   <link rel="stylesheet" href="panel.css">
 </head>
 <body>
@@ -11,8 +11,19 @@
     <header class="header">
       <h1><span class="glow">DevLynx AI</span></h1>
       <p class="header-version" id="header-version" aria-label="Version"></p>
-      <p class="tagline">AI Developer Assistant for Any Website</p>
-      <p id="feed-server-status" class="feed-server-status" aria-live="polite" title="Click to retry connection"><span class="badge">checking…</span></p>
+      <p class="tagline">Explain, debug &amp; modify any website</p>
+      <div
+        id="connection-status"
+        class="connection-status"
+        aria-live="polite"
+        role="status"
+        aria-label="DevLynx API connection"
+        title="Click to retry connection"
+      >
+        <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+        <span id="status-text">Checking…</span>
+        <button type="button" id="retry-connection" class="btn-retry" title="Retry connection">⟳</button>
+      </div>
       <p id="disconnect-hint" class="disconnect-hint" hidden>Checking connection…</p>
       <div id="status-bar" class="status-bar" aria-live="polite">
         <span id="status-bar-server" class="status-bar-item">● DevLynx Server: …</span>
@@ -24,7 +35,7 @@
 
     <div class="group-title">1. AI Assistant</div>
 
-    <section class="block highlight-block" style="position: relative; overflow: hidden;">
+    <section class="block highlight-block block--clip">
       <h2>✨ AI Explain Element <span class="pro-badge">PRO</span></h2>
       <p class="hint">Click Try it! then click an element on the page to get an AI explanation.</p>
       <div class="explain-mode-row">
@@ -41,12 +52,19 @@
         <button type="button" id="stop-explain-inspect" class="btn btn-secondary btn-stop">Stop</button>
       </div>
       <p id="explain-element-status" class="status"></p>
-      <div class="answer-block-wrap">
-        <div class="answer-block-actions">
-          <button type="button" class="btn-copy-answer" data-copy-from="explain-element-answer" title="Copy to clipboard">Copy</button>
-          <button type="button" class="btn-clear-answer" data-clear-from="explain-element-answer" title="Clear result">Clear</button>
+      <div class="answer-block">
+        <div class="answer-header">
+          <h4>Explain element</h4>
+          <div class="answer-actions">
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="explain-element-answer" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="explain-element-answer" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="explain-element-answer" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+          </div>
         </div>
-        <div id="explain-element-answer" class="dev-answer empty"></div>
+        <div id="explain-element-answer" class="answer-content dev-answer empty"></div>
+        <div class="answer-footer">
+          <span class="answer-timestamp" data-answer-for="explain-element-answer">—</span>
+        </div>
       </div>
     </section>
 
@@ -59,42 +77,69 @@
         <button type="button" id="dev-ask" class="btn btn-primary full" data-requires-user-openai>Ask AI</button>
       </div>
       <p id="dev-status" class="status"></p>
-      <div class="answer-block-wrap">
-        <div class="answer-block-actions">
-          <button type="button" class="btn-copy-answer" data-copy-from="dev-answer" title="Copy to clipboard">Copy</button>
-          <button type="button" class="btn-clear-answer" data-clear-from="dev-answer" title="Clear result">Clear</button>
+      <div class="answer-block">
+        <div class="answer-header">
+          <h4>Dev assistant</h4>
+          <div class="answer-actions">
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="dev-answer" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="dev-answer" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="dev-answer" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+          </div>
         </div>
-        <div id="dev-answer" class="dev-answer" aria-live="polite"></div>
+        <div id="dev-answer" class="answer-content dev-answer" aria-live="polite"></div>
+        <div class="answer-footer">
+          <span class="answer-timestamp" data-answer-for="dev-answer">—</span>
+        </div>
       </div>
     </section>
 
     <section class="block highlight-block">
-      <div class="row" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
-        <h2 style="margin: 0;">Error explainer <span class="pro-badge">PRO</span></h2>
-        <button type="button" id="get-page-errors" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" data-requires-user-openai>Get Errors</button>
-      </div>
-      <p class="hint">Paste a console error below, or click Get Errors to capture from the page.</p>
-      <textarea id="error-explainer-input" rows="3" placeholder="Paste error or stack trace…"></textarea>
-      <button type="button" id="error-explainer-btn" class="btn btn-secondary full" style="margin-top: 8px;" data-requires-user-openai>Explain error</button>
-      <p id="error-explainer-status" class="status"></p>
-      <div class="answer-block-wrap">
-        <div class="answer-block-actions">
-          <button type="button" class="btn-copy-answer" data-copy-from="error-explainer-answer" title="Copy to clipboard">Copy</button>
-          <button type="button" class="btn-clear-answer" data-clear-from="error-explainer-answer" title="Clear result">Clear</button>
+      <div class="row block-heading-row">
+        <h2>Error explainer <span class="pro-badge">PRO</span></h2>
+        <div class="error-capture-controls">
+          <button type="button" id="get-page-errors" class="btn btn-secondary" data-requires-user-openai>
+            <span class="btn-inline-icon" aria-hidden="true">📋</span> Get Errors
+          </button>
+          <span class="error-count-badge" id="error-count" hidden>0</span>
         </div>
-        <div id="error-explainer-answer" class="dev-answer"></div>
+      </div>
+      <p class="hint">Paste console output below, or <strong>Get Errors</strong> — only logs after this tab loaded (reload the page if needed). Network failures in DevTools are not captured unless the site logs them. The AI often starts with the <strong>first</strong> distinct error; paste more blocks or run Explain again for the rest.</p>
+      <textarea id="error-explainer-input" rows="3" placeholder="Paste error or stack trace…"></textarea>
+      <button type="button" id="error-explainer-btn" class="btn btn-secondary full mt-sm" data-requires-user-openai>Explain error</button>
+      <p id="error-explainer-status" class="status"></p>
+      <div class="answer-block">
+        <div class="answer-header">
+          <h4>Error analysis</h4>
+          <div class="answer-actions">
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="error-explainer-answer" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="error-explainer-answer" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="error-explainer-answer" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+          </div>
+        </div>
+
+        <div id="error-explainer-answer" class="answer-content dev-answer"></div>
+        <div class="answer-footer">
+          <span class="answer-timestamp" data-answer-for="error-explainer-answer">—</span>
+        </div>
       </div>
     </section>
 
     <section class="block" id="last-ai-result-block">
       <h2>Last AI result (Context Menu)</h2>
       <p class="hint">Select text → right‑click → DevLynx AI → Ask AI / Generate code. Result appears here.</p>
-      <div class="answer-block-wrap">
-        <div class="answer-block-actions">
-          <button type="button" class="btn-copy-answer" data-copy-from="last-ai-result" title="Copy to clipboard">Copy</button>
-          <button type="button" class="btn-clear-answer" data-clear-from="last-ai-result" title="Clear result">Clear</button>
+      <div class="answer-block">
+        <div class="answer-header">
+          <h4>Last AI result</h4>
+          <div class="answer-actions">
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="last-ai-result" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="last-ai-result" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="last-ai-result" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+          </div>
         </div>
-        <div id="last-ai-result" class="dev-answer empty"></div>
+        <div id="last-ai-result" class="answer-content dev-answer empty"></div>
+        <div class="answer-footer">
+          <span class="answer-timestamp" data-answer-for="last-ai-result">—</span>
+        </div>
       </div>
     </section>
 
@@ -108,7 +153,7 @@
       <button type="button" id="generate-mod-btn" class="btn btn-primary full" data-requires-user-openai>Generate mod (AI)</button>
       <p id="generate-mod-status" class="status"></p>
       
-      <div class="row" style="margin-top: 12px;">
+      <div class="row mt-md">
         <button type="button" id="reset-page-mods" class="btn btn-secondary full" title="Remove all AI mods for this site">Reset Site (Undo)</button>
       </div>
       <p id="custom-css-status" class="status"></p>
@@ -134,7 +179,7 @@
           <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>.
           Your key is stored only in this browser — it is never sent to the DevLynx server.
         </p>
-        <div class="quick-row" style="margin-top: 8px;">
+        <div class="quick-row openai-key-actions">
           <button type="button" id="save-openai-key-btn" class="btn btn-primary">Save API Key</button>
           <button type="button" id="clear-openai-key-btn" class="btn btn-secondary">Clear Key</button>
           <a href="https://platform.openai.com/api-keys" class="openai-dashboard-link" target="_blank" rel="noopener noreferrer">OpenAI dashboard</a>
@@ -144,8 +189,8 @@
 
       <button type="button" id="open-api-tester" class="btn btn-secondary full">Open API tester</button>
       
-      <div class="quick-row" style="margin-top: 12px;">
-        <button id="screenshot-browser" class="btn btn-secondary full">Screenshot</button>
+      <div class="quick-row mt-md">
+        <button id="screenshot-browser" type="button" class="btn btn-secondary full">Screenshot</button>
       </div>
       <p id="screenshot-status" class="status"></p>
     </section>
@@ -169,20 +214,29 @@
             <option value="PUT">PUT</option>
             <option value="DELETE">DELETE</option>
           </select>
-          <button id="call-api" class="btn-primary">CALL</button>
+          <button type="button" id="call-api" class="btn btn-primary btn-api-call">Call</button>
         </div>
-        <div class="row" style="margin-top: 8px;">
-          <button id="generate-code" class="btn-secondary" style="flex:1" disabled data-requires-user-openai>Gen Code</button>
-          <button id="explain-endpoint" class="btn-secondary" style="flex:1" disabled data-requires-user-openai>Explain</button>
+        <div class="row api-tester-ai-row">
+          <button type="button" id="generate-code" class="btn btn-secondary flex-1" disabled data-requires-user-openai>Gen code</button>
+          <button type="button" id="explain-endpoint" class="btn btn-secondary flex-1" disabled data-requires-user-openai>Explain</button>
         </div>
         <p id="api-status" class="status"></p>
         <pre id="api-response"></pre>
         <p id="api-ai-status" class="hint"></p>
-        <div class="answer-block-actions" style="margin-top:6px">
-          <button type="button" class="btn-copy-answer" data-copy-from="api-ai-response" title="Copy to clipboard">Copy</button>
-          <button type="button" class="btn-clear-answer" data-clear-from="api-ai-response" title="Clear result">Clear</button>
+        <div class="answer-block answer-block--api-ai">
+          <div class="answer-header">
+            <h4>AI analysis</h4>
+            <div class="answer-actions">
+              <button type="button" class="btn-icon btn-copy-answer" data-copy-from="api-ai-response" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
+              <button type="button" class="btn-icon btn-clear-answer" data-clear-from="api-ai-response" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
+              <button type="button" class="btn-icon btn-expand-answer" data-expand-for="api-ai-response" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+            </div>
+          </div>
+          <pre id="api-ai-response" class="answer-content explain-response"></pre>
+          <div class="answer-footer">
+            <span class="answer-timestamp" data-answer-for="api-ai-response">—</span>
+          </div>
         </div>
-        <pre id="api-ai-response" class="explain-response"></pre>
       </div>
     </div>
 
@@ -192,7 +246,7 @@
       <div class="upgrade-modal-content">
         <h2 id="upgrade-modal-title" class="upgrade-modal-title">Your free AI trial has ended</h2>
         <p class="upgrade-modal-text">Upgrade to DevLynx Pro</p>
-        <p class="upgrade-modal-price-line">$9.99 lifetime</p>
+        <p class="upgrade-modal-price-line">$35.99 USD · lifetime</p>
         <div class="upgrade-modal-actions">
           <div class="upgrade-modal-actions-row">
             <button type="button" id="upgrade-modal-btn" class="btn btn-primary btn-cta" data-upgrade-anchor>Upgrade</button>
@@ -216,7 +270,7 @@
     </div>
 
     <footer class="panel-footer">
-      <span id="panel-version" class="panel-version">DevLynx v1.1.2</span>
+      <span id="panel-version" class="panel-version">DevLynx v1.1.3</span>
       <div id="chrome-store-rate-banner" class="chrome-store-rate-banner" hidden role="region" aria-label="Rate on Chrome Web Store">
         <p class="chrome-store-rate-text">Enjoying DevLynx AI? A review helps others find us.</p>
         <button type="button" id="chrome-store-rate-btn" class="btn btn-secondary btn-rate-store">⭐ Rate DevLynx AI on Chrome Web Store</button>
@@ -224,9 +278,9 @@
       </div>
       <div class="upgrade-box" data-upgrade-link>
         <h3 class="upgrade-box-title">DevLynx Pro</h3>
-        <p class="upgrade-sub">$9.99 one-time purchase · Lifetime updates</p>
+        <p class="upgrade-sub">$35.99 USD one-time purchase · Lifetime updates</p>
         <div class="upgrade-actions">
-          <button type="button" id="buy-pro-btn" class="btn btn-primary btn-cta primary-upgrade" data-upgrade-anchor>Buy DevLynx Pro — $9.99</button>
+          <button type="button" id="buy-pro-btn" class="btn btn-primary btn-cta primary-upgrade" data-upgrade-anchor>Buy DevLynx Pro — $35.99</button>
           <button type="button" id="activate-license-toggle" class="btn btn-secondary secondary-upgrade" aria-expanded="false" aria-controls="license-panel" data-upgrade-anchor>
             Activate License
           </button>
