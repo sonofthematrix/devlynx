@@ -1,0 +1,27 @@
+---
+description: Chrome extension (Manifest V3) — DevLynx src/
+globs:
+  - src/manifest.json
+  - src/background.js
+  - src/license-jwt-public.js
+  - src/content/**/*.js
+  - src/content/**/*.css
+  - src/sidepanel/**/*.js
+  - src/sidepanel/**/*.html
+  - src/sidepanel/**/*.css
+  - src/options/**/*.js
+  - src/options/**/*.html
+  - src/devtools/**/*.js
+  - src/devtools/**/*.html
+  - src/shared/**/*.js
+alwaysApply: false
+---
+
+# Chrome Extension Rules (DevLynx)
+
+- **Manifest V3**: `manifest_version` 3; één `service_worker` (geen background page).
+- **Permissions**: `host_permissions` / `permissions` minimal houden; nieuwe origins = manifest + evt. `host_permissions` updaten.
+- **Content scripts**: `matches` / `exclude_matches` en `world` (MAIN vs isolated) bewust zetten; gedeelde DOM ≠ gedeelde JS-variabelen tussen worlds.
+- **Berichten**: stabiele `type` / `action` strings; `sendResponse` + `return true` waar async.
+- **Build**: wijzigingen in `src/` → `npm run build` → test op `dist/` (obfuscation).
+- **License JWT**: public key in `src/license-jwt-public.js`; private key nooit in de extensie.

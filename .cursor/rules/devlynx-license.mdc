@@ -1,0 +1,21 @@
+---
+description: License, Gumroad, JWT, activations — DevLynx
+globs:
+  - feed-server/server-with-ai.js
+  - feed-server/activation-store.js
+  - feed-server/trial-store.js
+  - feed-server/license-jwt.js
+  - src/background.js
+  - src/options/options.js
+  - src/shared/validate-license-token.js
+alwaysApply: false
+---
+
+# DevLynx License Management
+
+- **Verify body** (extensie → server): `license_key`, `device_id`, `extension_id` — geen andere secrets in hetzelfde POST-body patroon mengen.
+- **Gumroad**: `GUMROAD_PRODUCT_ID` en/of `GUMROAD_PRODUCT_PERMALINK` in server-env; product-id **niet** hardcoden in regels of docs in repo.
+- **Activations**: `activation-store.js` — max devices (`LICENSE_MAX_ACTIVE_DEVICES`, default 3), venster (`LICENSE_DEVICE_ACTIVE_DAYS`, default 90), hash van key in storage i.p.v. plaintext.
+- **JWT Pro**: signing in `license-jwt.js`; verify in extensie via `validate-license-token.js` + embedded public PEM; **`expiresIn`** server = bron van waarheid.
+- **Responses**: consistent `error_code` waar van toepassing (`device_limit`, `invalid_key`, `bad_request`); client toont gebruikersvriendelijke tekst (panel/options).
+- **Localhost**: documented bypass in `server-with-ai.js` voor dev zonder key — niet verspreiden als “feature” voor eindgebruikers.

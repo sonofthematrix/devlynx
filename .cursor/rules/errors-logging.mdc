@@ -1,0 +1,14 @@
+---
+description: Fouten, logging, debug — DevLynx extensie & server
+globs:
+  - src/**/*.js
+  - feed-server/**/*.js
+alwaysApply: false
+---
+
+# Errors & logging (DevLynx)
+
+- **Extensie**: `[devlynx-debug]` / `[devlynx-security]` alleen voor echte diagnose; geen API keys of license keys in `console.log`.
+- **License refresh**: failures via `license_refresh_failure` / security logging; geen volledige JWT in logs.
+- **Server**: `send(res, …)` met JSON body die de extensie al verwacht (`ok`, `valid`, `error`, `error_code`); onverwachte 500 vermijden waar client 200 + `{ ok:false }` gebruikt.
+- **Gebruiker**: korte, actionable messages in UI (panel/options); netwerk “server offline” gescheiden van “invalid license” vs “device limit”.

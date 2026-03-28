@@ -1,0 +1,11 @@
+---
+description: Algemene code-aanpak DevLynx (focus, scope)
+alwaysApply: true
+---
+
+# Core standards (DevLynx)
+
+- **Scope**: alleen files/wijzigingen voor de gevraagde taak; geen drive-by refactors of niet gevraagde docs.
+- **Stijl**: bestaande naamgeving, imports en patronen in het bestand volgen; nieuwe code dezelfde “stem” als de rest van het bestand.
+- **Comments**: geen obvious boilerplate-commentaar; bestaande comments niet weggooien zonder reden.
+- **UX-copy**: helder Engels in UI waar de app Engels is; instructies voor de gebruiker (`simple-step-instructions.mdc`): Nederlands + genummerde stappen + volledige Windows-paden.

@@ -1,0 +1,16 @@
+---
+description: Feed server & Vercel API — DevLynx
+globs:
+  - feed-server/**/*.js
+  - api/**/*.js
+  - vercel.json
+alwaysApply: false
+---
+
+# API Backend Rules (DevLynx)
+
+- **Entry**: lokale handler `feed-server/server-with-ai.js`; Vercel: `api/[[...slug]].js` → zelfde handler (`feedServerHandler` / export).
+- **Pathname**: routing normaliseert `/api` en `/api/server`-prefix (`getRequestPathname`); nieuwe routes daar afstemmen.
+- **Secrets**: `OPENAI_API_KEY`, `LICENSE_JWT_PRIVATE_KEY`, `GUMROAD_*`, `BLOB_READ_WRITE_TOKEN` alleen via env (Vercel + lokaal `.env`); nooit in client of git.
+- **Serverless**: koude starts rekening houden; body size limieten respecteren; JSON-errors consistent (`send(res, 200, { ok, error… })` waar de extensie het verwacht).
+- **Blob**: `blob-access.js` bepaalt `public` vs `private` (`BLOB_STORE_ACCESS`); JSON-stores gebruiken vast pathname + `allowOverwrite: true`; trials/activations blijven authoritative server-side.

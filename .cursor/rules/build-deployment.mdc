@@ -1,0 +1,17 @@
+---
+description: Build, package, release — DevLynx
+globs:
+  - scripts/**/*.js
+  - package.json
+  - vercel.json
+  - release/**/*
+alwaysApply: false
+---
+
+# Build & Deployment Rules (DevLynx)
+
+- **Build**: `npm run build` → `dist/` (obfuscated waar script dat aangeeft); `npm run build:prod` voor productie-API base; `npm run build:local-feed` voor localhost-feed in build.
+- **Store zip**: `npm run release` / `package:prod` → `release/devlens-extension.zip` (uploaden naar Chrome Web Store, niet `src/` of `feed-server/`).
+- **API base**: productie staat in `scripts/build.js` (`HOSTED_FEED_API` / placeholder vervanging); hosted default o.a. Vercel `/api`-root volgens `vercel.json`.
+- **Lokale feed**: `feed-server/` — poort uit `PORT` / `.env`; extensie-build met local-feed wijst naar `http://127.0.0.1:2847` (of jouw lokale URL).
+- **Deploy server**: Vercel env sync met `developer/LICENSE-JWT-KEYS.md` / interne docs; extensie public key en server private key **same pair**.
