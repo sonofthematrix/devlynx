@@ -10,7 +10,7 @@
     body {
       margin: 0;
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0a0f;
+      background: #090b14;
       color: #cbd5e1;
       min-height: 100vh;
       line-height: 1.5;
@@ -25,12 +25,15 @@
       margin-bottom: 48px;
     }
     .plan-card {
-      background: linear-gradient(160deg, #0d0d12 0%, #0a0a0f 100%);
-      border: 1px solid rgba(250, 204, 21, 0.2);
+      background: linear-gradient(160deg, #0f1221 0%, #090c17 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
       padding: 28px 24px;
       display: flex;
       flex-direction: column;
+    }
+    .plan-card.pro {
+      border-color: rgba(250, 204, 21, 0.25);
     }
     .plan-card h2 { margin: 0 0 12px; font-size: 20px; color: #f8fafc; }
     .plan-card .price { font-size: 32px; font-weight: 700; color: #eab308; margin-bottom: 4px; }
@@ -61,8 +64,16 @@
     .cta-primary { background: linear-gradient(90deg, #f59e0b, #eab308); color: #000; border: none; }
     .cta-secondary { background: transparent; color: #eab308; border: 2px solid rgba(250, 204, 21, 0.5); }
     .badge { display: inline-block; background: linear-gradient(90deg, #f59e0b, #facc15); color: #000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
-    footer { text-align: center; padding: 24px; color: #64748b; font-size: 13px; }
-    footer a { color: #94a3b8; }
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      color: #64748b;
+      font-size: 13px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin-top: 40px;
+    }
+    footer a { color: #8b97ad; text-decoration: none; }
+    footer a:hover { color: #cbd5e1; }
   </style>
 </head>
 <body>
@@ -73,7 +84,7 @@
     <div class="pricing-grid">
       <div class="plan-card free">
         <h2>Free</h2>
-        <div class="price">€0</div>
+        <div class="price">$0</div>
         <div class="price-note">Forever free · Core tools</div>
         <ul>
           <li>Inspect element helper &amp; DOM highlight</li>
@@ -87,8 +98,8 @@
 
       <div class="plan-card pro">
         <h2>DevLynx Pro <span class="badge">PRO</span></h2>
-        <div class="price">$35.99 <span class="price-currency">USD</span></div>
-        <div class="price-note">$35.99 USD one-time purchase · Lifetime updates</div>
+        <div class="price">$19 <span class="price-currency">USD</span></div>
+        <div class="price-note">Launch price · One-time · Lifetime updates</div>
         <ul>
           <li>Everything in Free (tools stay unlimited)</li>
           <li><strong>Unlimited</strong> Explain Element</li>
@@ -97,14 +108,17 @@
           <li><strong>Unlimited</strong> Dev Assistant</li>
           <li>Future AI features &amp; priority support</li>
         </ul>
-        <a href="https://jcdreamz.gumroad.com/l/devlynx-ai" class="cta cta-primary" id="cta-pro" target="_blank" rel="noopener noreferrer">Get Pro</a>
+        <a href="https://sonofthematrix.gumroad.com/l/devlynx-ai" class="cta cta-primary" id="cta-pro" target="_blank" rel="noopener noreferrer">Get Pro — $19</a>
       </div>
     </div>
 
     <p style="color: #94a3b8; font-size: 14px;">After purchase you will receive a license key by email. Enter it in the extension: right‑click the extension icon → Options → paste your key → Verify with server.</p>
   </div>
   <footer>
-    DevLynx AI
+    © 2026 DevLynx AI ·
+    <a href="/privacy">Privacy Policy</a> ·
+    <a href="mailto:sonofthematrix@hotmail.com">Support</a> ·
+    <a href="https://sonofthematrix.gumroad.com/l/devlynx-ai" target="_blank" rel="noopener noreferrer">Buy Pro</a>
   </footer>
 </body>
 </html>

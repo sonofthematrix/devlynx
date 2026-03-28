@@ -1,0 +1,14 @@
+﻿# Secrets & local env — niet indexeren / niet standaard in AI-context
+.env
+.env.*
+!.env.example
+secrets.json
+credentials.json
+*.pem
+*.key
+*.p12
+config/secrets.yml
+
+# Zwaar / gegenereerd
+node_modules/
+.vercel

@@ -1,0 +1,16 @@
+---
+description: Main-world error capture + bridge — DevLynx content
+globs:
+  - src/content/error-capture-bridge.js
+  - src/content/main-world-error-capture.js
+  - src/content/content.js
+alwaysApply: false
+---
+
+# Error capture pattern (DevLynx)
+
+- **MAIN world** (`main-world-error-capture.js`): `error` (capture), `unhandledrejection`, en waar mogelijk **`console.error`** overschrijven; events/postMessage door naar isolated world (CustomEvent + **`postMessage`** met `source: '__DEVLYNX_ERR__'`).
+- **Bridge** (`error-capture-bridge.js`): luistert op `DevLynxErrorCaptured` → vult `window.devlensErrors` in isolated context (naast het postMessage-pad in `content.js`).
+- **Isolated** (`content.js`): eigen `console.error`/`warn`/filterlog-hooks + **`mainWorldPostedErrors`**; `getAllCapturedErrors()` merge + dedupe; `getErrors` action voor panel.
+- **Geen Network-tab**: 401/429/CORS uit DevTools **Network** verschijnen alleen als de **pagina** ze naar `console.*` logt; voor error-explain plakt de gebruiker vaak consoletekst — AI (`explainError`) interpreteert status/CORS uit die paste.
+- **Wijzigingen**: nieuwe event types hetzelfde doorgeven (één string per incident); `manifest` volgorde: bridge + main world vroeg (`document_start`), `content.js` typisch `document_idle`.

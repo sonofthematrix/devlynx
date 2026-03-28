@@ -173,13 +173,13 @@ async function postVerifyLicenseWithTimeout(bodyObj) {
       const res = await fetch(url, options);
       const text = await res.text();
       if (!res.ok) {
-        console.warn('[devlynx-debug] verify-license HTTP', res.status, text.slice(0, 800));
+        console.warn('[devlynx] verify-license HTTP', res.status);
       }
       let data = {};
       try {
         data = text ? JSON.parse(text) : {};
       } catch (parseErr) {
-        console.warn('[devlynx-debug] verify-license JSON parse error:', parseErr.message, text.slice(0, 800));
+        console.warn('[devlynx] verify-license JSON parse error');
         data = {};
       }
       return { kind: 'http', res, data, url };
@@ -603,7 +603,8 @@ async function openAiChatCompletion(apiKey, systemPrompt, userContent) {
         { role: 'user', content: userContent }
       ],
       max_tokens: 1024
-    })
+    }),
+    signal: abortSignalMs(30000)
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -851,6 +852,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     safeSendResponse(sendResponse, { ok: true });
     return true;
   }
+  if (message.type === 'GET_DEVICE_ID') {
+    getOrCreateDeviceIdBg().then((id) => safeSendResponse(sendResponse, { id })).catch(() => safeSendResponse(sendResponse, { id: '' }));
+    return true;
+  }
   if (message.type === 'OPEN_EXTENSIONS_PAGE') {
     const ua = navigator.userAgent;
     let extUrl = 'chrome://extensions';
@@ -867,6 +872,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const payload = message.payload;
     if (!payload || typeof payload.url !== 'string') {
       safeSendResponse(sendResponse, { ok: false, error: 'Missing or invalid URL' });
+      return true;
+    }
+    // SSRF protection: only allow http(s), block private/link-local IP ranges
+    try {
+      const u = new URL(payload.url);
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') {
+        safeSendResponse(sendResponse, { ok: false, error: 'Only http and https URLs are allowed' });
+        return true;
+      }
+      const host = u.hostname.replace(/^\[|\]$/g, ''); // strip IPv6 brackets
+      if (
+        /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|0\.0\.0\.0)$/.test(host) ||
+        host === 'localhost' || host === '::1' || host.startsWith('::ffff:') ||
+        (host && !host.includes('.') && !host.includes(':'))  // bare hostnames
+      ) {
+        safeSendResponse(sendResponse, { ok: false, error: 'Requests to private/local addresses are not allowed' });
+        return true;
+      }
+    } catch (_) {
+      safeSendResponse(sendResponse, { ok: false, error: 'Invalid URL' });
       return true;
     }
     handleApiRequest(payload)
@@ -985,6 +1010,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+  // Apply CSS mod via insertCSS — extension runtime injection, fully exempt from page CSP.
+  if (message.type === 'APPLY_CSS_MOD') {
+    const tabId = sender && sender.tab && sender.tab.id;
+    if (!tabId || typeof message.css !== 'string' || !message.css) return false;
+    chrome.scripting.insertCSS({ target: { tabId }, css: message.css }).catch(() => {});
+    return false;
+  }
+
+  // Execute JS mod in page MAIN world. Fails on strict-CSP sites (e.g. Stripe) — catch and notify.
+  if (message.type === 'EXECUTE_MOD_JS') {
+    const tabId = sender && sender.tab && sender.tab.id;
+    if (!tabId || typeof message.code !== 'string' || !message.code) return false;
+    const showFeedback = !!message.showFeedback;
+    chrome.scripting.executeScript({
+      target: { tabId },
+      func: (code) => { try { (0, eval)(code); return true; } catch (e) { return false; } },
+      args: [message.code],
+      world: 'MAIN',
+    }).then((results) => {
+      const result = results && results[0] && results[0].result;
+      if (showFeedback && result === false) {
+        chrome.tabs.sendMessage(tabId, {
+          type: 'SHOW_MOD_STATUS',
+          message: 'JS mods are blocked by this site\'s security policy. CSS mods still work.',
+        }).catch(() => {});
+      }
+    }).catch(() => {
+      // executeScript itself threw — also CSP or permissions issue
+      if (showFeedback) {
+        chrome.tabs.sendMessage(tabId, {
+          type: 'SHOW_MOD_STATUS',
+          message: 'JS mods are blocked by this site\'s security policy. CSS mods still work.',
+        }).catch(() => {});
+      }
+    });
+    return false;
+  }
   // Get selection from page (for AI context menu)
   if (message.type === 'GET_SELECTION') {
     const tabId = message.tabId;
@@ -995,6 +1057,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.scripting.executeScript(
       { target: { tabId }, func: () => window.getSelection().toString() },
       (results) => {
+        if (chrome.runtime.lastError) {
+          setLastError('GET_SELECTION', chrome.runtime.lastError.message);
+          safeSendResponse(sendResponse, { text: '' });
+          return;
+        }
         const text = (results && results[0] && results[0].result) ? String(results[0].result) : '';
         safeSendResponse(sendResponse, { text });
       }

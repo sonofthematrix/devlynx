@@ -1,0 +1,15 @@
+---
+description: Device activation (90d window, blob) — DevLynx
+globs:
+  - feed-server/activation-store.js
+  - feed-server/server-with-ai.js
+alwaysApply: false
+---
+
+# Device activation pattern (DevLynx)
+
+- **Limiet**: max actieve devices via `LICENSE_MAX_ACTIVE_DEVICES` (default **3**); venster via `LICENSE_DEVICE_ACTIVE_DAYS` (default **90**). Alleen devices met `lastUsed` binnen dat venster tellen mee.
+- **Bestaand device**: zelfde `device_id` → altijd toegestaan; alleen `lastUsed` bijwerken (geen extra slot).
+- **Opslag**: license key **niet** plaintext in JSON; bucket-key = **SHA-256** van genormaliseerde key (`licenseKeyHash`).
+- **Vercel**: bij `BLOB_READ_WRITE_TOKEN`: JSON op vast pathname + `allowOverwrite: true`; `blob-access.js` → `access` matcht store (`BLOB_STORE_ACCESS`, default private).
+- **Flow server**: na geldige Gumroad (of dev code) → `tryActivate` → dan pas Pro-JWT tekenen; fouten met `error_code` o.a. `device_limit`, `bad_request`.

@@ -78,7 +78,7 @@ KEY FEATURES
 FREE VS PRO
 
 Free: core tools plus a shared AI trial (e.g. 20 successful AI uses — see in-app trial status).  
-Pro: unlimited AI for Explain Element, Error Explainer, and other AI features. Pro is a one-time purchase at $35.99 USD with lifetime updates (sold via Gumroad when the product is available).
+Pro: unlimited AI for Explain Element, Error Explainer, and other AI features. Pro is a one-time purchase at $19 USD with lifetime updates (sold via Gumroad when the product is available).
 
 SETUP
 
@@ -86,7 +86,7 @@ Add your OpenAI API key under API & Environment in the panel (BYOK). The default
 
 PRIVACY (SUMMARY)
 
-We do not sell browsing history or run ad profiling. Your OpenAI API key is stored only in this browser on your device — not for resale. The extension contacts our hosted service for health, licensing, and trial enforcement as configured; AI-related requests use your key and may go to OpenAI and/or our feed as needed for each feature. The API tester sends requests only to URLs you explicitly enter. Details: [PRIVACY_URL]
+We do not sell browsing history or run ad profiling. Your OpenAI API key is stored only in this browser on your device — not for resale. The extension contacts our hosted service for health, licensing, and trial enforcement as configured; AI-related requests use your key and may go to OpenAI and/or our feed as needed for each feature. The API tester sends requests only to URLs you explicitly enter. Details: https://devlynx-black.vercel.app/privacy
 
 PERMISSIONS
 
@@ -94,7 +94,7 @@ Broad access (<all_urls>) is required so developer features work on any site you
 
 SUPPORT
 
-[SUPPORT_URL]
+mailto:sonofthematrix@hotmail.com
 ```
 
 ### Permission justification (plak in het dashboard)
@@ -131,7 +131,7 @@ Gebruik een eigen pagina; minimum-inhoud:
 | Plan | Model |
 |------|--------|
 | **Free** | Core tools + **AI trial** (o.a. ~20 succesvolle uses; zie app). |
-| **Pro** | **$35.99 USD** eenmalig · lifetime updates · onbeperkte Pro-AI (zoals in app). |
+| **Pro** | **$19 USD** eenmalig · lifetime updates · onbeperkte Pro-AI (zoals in app). |
 
 *Gebruik **geen** €12/mnd of €99/jr in store-copy tenzij je daar echt op verkoopt — dat botst met de huidige **lifetime**-Pro in de extensie.*
 

@@ -211,7 +211,7 @@ const TRIAL_STORAGE_KEY = 'trialUsesRemaining';
 const TRIAL_INSTALL_ID_KEY = 'trialInstallId';
 const TRIAL_ENDED_MESSAGE =
   'Your free AI trial has ended.\nUpgrade to DevLynx Pro to continue using AI tools.';
-const GUMROAD_URL = 'https://jcdreamz.gumroad.com/l/devlynx-ai';
+const GUMROAD_URL = 'https://sonofthematrix.gumroad.com/l/devlynx-ai';
 
 /** After this many successful AI responses, show “Rate on Chrome Web Store” (growth). */
 const RATE_PROMPT_USES_KEY = 'devlynx_successful_ai_uses';
@@ -268,24 +268,18 @@ function getLicenseKey() {
   });
 }
 
-/** Persistent per-browser-profile device id for license binding (max devices enforced server-side). */
+/** Persistent per-browser-profile device id — always fetched from background to avoid race condition. */
 function getOrCreateDeviceId() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([DEVICE_ID_STORAGE_KEY], (data) => {
-      if (chrome.runtime.lastError) {
-        resolve('');
+    chrome.runtime.sendMessage({ type: 'GET_DEVICE_ID' }, (response) => {
+      if (chrome.runtime.lastError || !response || !response.id) {
+        // Fallback: read storage directly (background may not be alive yet)
+        chrome.storage.local.get([DEVICE_ID_STORAGE_KEY], (data) => {
+          resolve((data && data[DEVICE_ID_STORAGE_KEY] && String(data[DEVICE_ID_STORAGE_KEY]).trim()) || '');
+        });
         return;
       }
-      const existing = data[DEVICE_ID_STORAGE_KEY];
-      if (existing && String(existing).trim()) {
-        resolve(String(existing).trim());
-        return;
-      }
-      const id =
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : 'devlynx-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
-      chrome.storage.local.set({ [DEVICE_ID_STORAGE_KEY]: id }, () => resolve(id));
+      resolve(response.id);
     });
   });
 }
@@ -366,7 +360,7 @@ async function loadProjects() {
     if (hint) hint.textContent = statusMessage === 'Connected' ? 'No workspace configured.' : hint.textContent;
     return;
   }
-  if (sel) sel.innerHTML = data.projects.map((p) => `<option value="${p.index}">${p.name}</option>`).join('');
+  if (sel) sel.innerHTML = data.projects.map((p) => `<option value="${Number(p.index) || 0}">${escapeHtml(p.name)}</option>`).join('');
   if (hint) hint.textContent = statusMessage === 'Connected' ? 'Choose project for screenshot and tasks.' : hint.textContent;
 }
 
@@ -479,7 +473,7 @@ async function loadExtensions() {
       sel.innerHTML = '<option value="">No extensions in project</option>';
       return;
     }
-    sel.innerHTML = data.extensions.map((e) => `<option value="${e.index}">${e.name}</option>`).join('');
+    sel.innerHTML = data.extensions.map((e) => `<option value="${Number(e.index) || 0}">${escapeHtml(e.name)}</option>`).join('');
   } catch (e) {
     sel.innerHTML = '<option value="">Error</option>';
   }
@@ -975,6 +969,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (licenseVerifyInFlight) return;
     licenseVerifyInFlight = true;
     setPanelLicenseInlineStatus('Verifying…', '');
+    const _verifySlowTimer = setTimeout(() => {
+      setPanelLicenseInlineStatus('Still verifying… this can take up to 45 seconds.', '');
+    }, 10000);
     try {
       const deviceId = await getOrCreateDeviceId();
       let data = {};
@@ -1063,6 +1060,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
       setPanelLicenseInlineStatus(serverOfflineMsg(), 'error');
     } finally {
+      clearTimeout(_verifySlowTimer);
       licenseVerifyInFlight = false;
     }
   }
@@ -1249,6 +1247,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function injectContentScript(tabId) {
     try {
+      // If the content script is already alive (manifest injected it), skip re-injection.
+      // Re-injecting resets captured error state and is unnecessary on strict-CSP sites.
+      try {
+        await sendMessageWithTimeout(tabId, { action: 'ping' }, 1000);
+        return { success: true };
+      } catch (_) {
+        // No response — content script not yet loaded, proceed with injection.
+      }
+      // Inject CSS first — executeScript only handles JS, insertCSS handles styles.
+      // Without this, the click-to-edit toolbar and hover outline are invisible.
+      try {
+        await chrome.scripting.insertCSS({
+          target: { tabId },
+          files: ['content/content.css'],
+        });
+      } catch (_) {}
       await chrome.scripting.executeScript({
         target: { tabId },
         files: ['content/error-capture-bridge.js', 'content/content.js'],
@@ -1263,6 +1277,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       return { success: true };
     } catch (error) {
       return { success: false, error: (error && error.message) || 'Injection failed' };
+    }
+  }
+
+  /** Ping content script; inject + re-ping on failure (shared by Get Errors, Click-to-edit, Explain Element). */
+  async function ensureContentScriptReady(tabId) {
+    try {
+      await sendMessageWithTimeout(tabId, { action: 'ping' }, 1200);
+    } catch (_) {
+      const injected = await injectContentScript(tabId);
+      if (!injected || !injected.success) {
+        throw new Error(
+          (injected && injected.error) ||
+            'Could not inject into this page. Reload the tab (F5) or try a normal https:// page.'
+        );
+      }
+      await sendMessageWithTimeout(tabId, { action: 'ping' }, 5000);
     }
   }
 
@@ -1315,17 +1345,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error(`Cannot capture errors from ${tab.url || 'this page'}. Try a regular website.`);
       }
 
-      try {
-        await sendMessageWithTimeout(tab.id, { action: 'ping' }, 1200);
-      } catch (_) {
-        await injectContentScript(tab.id);
-      }
+      await ensureContentScriptReady(tab.id);
 
-      const response = await sendMessageWithTimeout(tab.id, { action: 'getErrors' }, 3000);
-      const errors = Array.isArray(response && response.errors) ? response.errors : [];
+      const response = await sendMessageWithTimeout(tab.id, { action: 'getErrors' }, 8000);
+      const raw = Array.isArray(response && response.errors) ? response.errors : [];
+      const errors = raw.map((e) => String(e == null ? '' : e).trim()).filter(Boolean);
 
       if (errors.length > 0) {
-        errorTextarea.value = errors.join('\n');
+        errorTextarea.value = errors.join('\n\n');
         if (errorCountBadge) {
           errorCountBadge.hidden = false;
           errorCountBadge.textContent = String(errors.length);
@@ -1333,12 +1360,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         setStatus('error-explainer-status', `Captured ${errors.length} error(s). Asking AI...`);
         document.getElementById('error-explainer-btn')?.click();
       } else {
-        errorTextarea.value = 'No console errors found on this page.';
+        errorTextarea.value = 'No errors captured yet.\n\n' +
+          'How to capture errors:\n' +
+          '1. Keep this panel open\n' +
+          '2. Trigger the bug on the page (click a broken button, reload, etc.)\n' +
+          '3. Click "Get Errors" again — the extension captures from page load onward\n\n' +
+          'Tip: Hard-refresh the page (Ctrl+Shift+R) after opening the panel to capture page-load errors.';
         if (errorCountBadge) {
           errorCountBadge.hidden = true;
           errorCountBadge.textContent = '0';
         }
-        setStatus('error-explainer-status', 'No errors found. Trigger the bug on the page, then click Get Errors again.');
+        setStatus('error-explainer-status', 'No errors captured yet. Trigger the bug then click Get Errors again.');
       }
     } catch (error) {
       if (errorCountBadge) {
@@ -1384,11 +1416,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       setStatus('inspect-status', 'No active tab.', true);
       return;
     }
-    setStatus('inspect-status', '');
+    if (!tab.url || !tab.url.startsWith('http')) {
+      setStatus('inspect-status', 'Open a normal http(s) page — not Chrome internal or extension pages.', true);
+      return;
+    }
+    setStatus('inspect-status', 'Loading…');
+    try {
+      await ensureContentScriptReady(tab.id);
+    } catch (e) {
+      setStatus('inspect-status', (e && e.message) || 'Could not load on this page. Reload the tab and try again.', true);
+      return;
+    }
     chrome.runtime.sendMessage({ type: 'MOD_TO_TAB', tabId: tab.id, payload: { type: 'START_INSPECT_MODE' } }, (res) => {
-      if (chrome.runtime.lastError) setStatus('inspect-status', chrome.runtime.lastError.message || 'Error', true);
+      if (chrome.runtime.lastError) setStatus('inspect-status', chrome.runtime.lastError.message || 'Error. Try refreshing the page.', true);
       else if (res && !res.ok) setStatus('inspect-status', res.error || 'Failed', true);
-      else setStatus('inspect-status', 'Click an element on the page.');
+      else setStatus('inspect-status', 'Click any element on the page.');
     });
   });
   ref('stop-inspect')?.addEventListener('click', async () => {
@@ -1419,7 +1461,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       setStatus('explain-element-status', 'No active tab.', true);
       return;
     }
-    setStatus('explain-element-status', '');
+    if (!tab.url || !tab.url.startsWith('http')) {
+      setStatus('explain-element-status', 'Open a normal http(s) page first.', true);
+      return;
+    }
+    setStatus('explain-element-status', 'Loading…');
+    try {
+      await ensureContentScriptReady(tab.id);
+    } catch (e) {
+      setStatus('explain-element-status', (e && e.message) || 'Could not load on this page. Reload the tab and try again.', true);
+      return;
+    }
     const answerEl = document.getElementById('explain-element-answer');
     if (answerEl) setAnswerWithMarkdown(answerEl, '');
     chrome.runtime.sendMessage({ type: 'MOD_TO_TAB', tabId: tab.id, payload: { type: 'START_EXPLAIN_MODE' } }, (res) => {

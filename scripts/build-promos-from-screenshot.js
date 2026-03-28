@@ -321,24 +321,69 @@ async function svgToPng(svgString) {
   return sharp(Buffer.from(svgString, 'utf8')).png().toBuffer();
 }
 
-async function padToSize(imgSharp, targetW, targetH) {
-  const buf = await imgSharp.png().toBuffer();
+/** Rounded-corner mask applied to a PNG buffer. */
+async function roundCorners(buf, radius = 14) {
   const m = await sharp(buf).metadata();
-  const scale = Math.min(targetW / m.width, targetH / m.height);
+  const mask = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${m.width}" height="${m.height}">
+      <rect x="0" y="0" width="${m.width}" height="${m.height}" rx="${radius}" ry="${radius}"/>
+    </svg>`
+  );
+  return sharp(buf)
+    .composite([{ input: mask, blend: 'dest-in' }])
+    .png()
+    .toBuffer();
+}
+
+/** Dark gradient over the top portion to fade out the browser title bar. */
+async function applyTopFade(buf) {
+  const m = await sharp(buf).metadata();
+  const fadeH = Math.round(m.height * 0.07);
+  const grad = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${m.width}" height="${fadeH}">
+      <defs>
+        <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="${BG}" stop-opacity="1"/>
+          <stop offset="100%" stop-color="${BG}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <rect width="${m.width}" height="${fadeH}" fill="url(#tg)"/>
+    </svg>`
+  );
+  return sharp(buf)
+    .composite([{ input: grad, left: 0, top: 0 }])
+    .png()
+    .toBuffer();
+}
+
+async function padToSize(imgSharp, targetW, targetH) {
+  let buf = await imgSharp.png().toBuffer();
+  const m = await sharp(buf).metadata();
+  // Scale to fit with padding on each side so screenshot doesn't bleed to edges
+  const padding = 24;
+  const scale = Math.min((targetW - padding * 2) / m.width, (targetH - padding * 2) / m.height);
   const rw = Math.round(m.width * scale);
   const rh = Math.round(m.height * scale);
-  const resized = await sharp(buf).resize(rw, rh, { fit: 'inside' }).png().toBuffer();
+  let resized = await sharp(buf).resize(rw, rh, { fit: 'inside' }).png().toBuffer();
+  // Apply rounded corners then top fade
+  resized = await roundCorners(resized, 12);
+  resized = await applyTopFade(resized);
   const left = Math.floor((targetW - rw) / 2);
   const top = Math.floor((targetH - rh) / 2);
+  // Shadow layer: slightly larger dark rect offset below the image
+  const shadowSvg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${rw + 16}" height="${rh + 16}">
+      <rect x="8" y="10" width="${rw}" height="${rh}" rx="12" fill="#000000" opacity="0.55"/>
+    </svg>`
+  );
   return sharp({
-    create: {
-      width: targetW,
-      height: targetH,
-      channels: 3,
-      background: BG,
-    },
+    create: { width: targetW, height: targetH, channels: 4, background: { r: 10, g: 10, b: 15, alpha: 255 } },
   })
-    .composite([{ input: resized, left, top }])
+    .composite([
+      { input: shadowSvg, left: left - 8, top: top - 10, blend: 'over' },
+      { input: resized, left, top },
+    ])
+    .flatten({ background: BG })
     .png({ compressionLevel: 9 });
 }
 
@@ -371,38 +416,45 @@ async function compositeMarquee(leftPng, rightPanelPng, filename) {
 }
 
 async function main() {
-  const inputPath = path.resolve(process.argv[2] || DEFAULT_INPUT);
-  if (!fs.existsSync(inputPath)) {
-    console.error('Screenshot not found:', inputPath);
-    process.exit(1);
-  }
   if (!fs.existsSync(OUT_DIR)) {
     fs.mkdirSync(OUT_DIR, { recursive: true });
   }
 
-  const meta = await sharp(inputPath).metadata();
-  console.log('Source sidepanel:', inputPath, `${meta.width}×${meta.height}`);
+  const SHOTS_DIR = 'C:/Users/sonof/Pictures/Screenshots';
 
-  // —— 01: volledige browser + pagina + paneel (exact jouw screenshot) ——
-  const fullHero = await padToSize(sharp(inputPath), 1280, 800);
-  await fullHero.toFile(path.join(OUT_DIR, '01-full-browser-1280x800.png'));
-  console.log('Wrote 01-full-browser-1280x800.png (complete capture)');
+  // —— 6 store screenshots: each full browser shot padded to 1280×800 ——
+  const storeShots = [
+    { file: 'SCREEN1.png',                    out: '01-full-browser-1280x800.png' },
+    { file: 'SCREEN AIEXPLAINERSIMPLE.png',   out: '02-panel-full-1280x800.png' },
+    { file: 'SCREENAI EXPLAINER.png',         out: '03-panel-top-explain-1280x800.png' },
+    { file: 'devquestanswer.png',             out: '04-panel-mid-assistant-1280x800.png' },
+    { file: 'geenerror.png',                  out: '05-panel-bottom-tools-1280x800.png' },
+    { file: 'aimodquest.png',                 out: '06-context-menu-1280x800.png' },
+  ];
 
-  // —— Panel strip ——
-  const panel = extractPanelPipeline(inputPath, meta);
-  const panelBuf = await panel.png().toBuffer();
+  for (const { file, out } of storeShots) {
+    const src = path.join(SHOTS_DIR, file);
+    if (!fs.existsSync(src)) { console.warn('Missing:', src); continue; }
+    const result = await padToSize(sharp(src), 1280, 800);
+    await result.toFile(path.join(OUT_DIR, out));
+    console.log('Wrote', out);
+  }
+
+  // store-screenshot alias = same as 02
+  const src02 = path.join(SHOTS_DIR, 'SCREEN AIEXPLAINERSIMPLE.png');
+  await (await padToSize(sharp(src02), 1280, 800)).toFile(path.join(OUT_DIR, 'store-screenshot-1280x800.png'));
+  console.log('Wrote store-screenshot-1280x800.png');
+
+  // —— Panel source for promos/thumbnails: crop panel from dark browser screenshot ——
+  const heroBrowserSrc = path.join(SHOTS_DIR, 'SCREEN AIEXPLAINERSIMPLE.png');
+  const heroMeta = await sharp(heroBrowserSrc).metadata();
+  const panelW = Math.round(heroMeta.width * 0.38);
+  const panelLeft = heroMeta.width - panelW;
+  const panelBuf = await sharp(heroBrowserSrc)
+    .extract({ left: panelLeft, top: 0, width: panelW, height: heroMeta.height })
+    .png()
+    .toBuffer();
   await fs.promises.writeFile(path.join(OUT_DIR, 'panel-crop-from-screenshot.png'), panelBuf);
-
-  // —— 02: heel paneel op 1280×800 ——
-  const panelHeroBuf = await (await padToSize(sharp(panelBuf), 1280, 800)).png().toBuffer();
-  await sharp(panelHeroBuf).toFile(path.join(OUT_DIR, '02-panel-full-1280x800.png'));
-  await sharp(panelHeroBuf).toFile(path.join(OUT_DIR, 'store-screenshot-1280x800.png'));
-  console.log('Wrote 02-panel-full-1280x800.png + store-screenshot-1280x800.png (same)');
-
-  // —— 03–05: detail crops van hetzelfde paneel (zelfde pixels, ingezoomd) ——
-  await writePanelSlice(panelBuf, 0, 0.42, '03-panel-top-explain-1280x800.png');
-  await writePanelSlice(panelBuf, 0.28, 0.48, '04-panel-mid-assistant-1280x800.png');
-  await writePanelSlice(panelBuf, 0.52, 0.48, '05-panel-bottom-tools-1280x800.png');
 
   // —— Thumbnail + tile ——
   const thumb600 = await padToSize(sharp(panelBuf), 600, 600);
@@ -410,17 +462,17 @@ async function main() {
   console.log('Wrote thumbnail-600x600.png');
 
   await sharp(panelBuf)
-    .resize(440, 280, { fit: 'cover', position: 'top' })
+    .resize(440, 280, { fit: 'contain', background: BG, position: 'top' })
     .png({ compressionLevel: 9 })
     .toFile(path.join(OUT_DIR, 'promo-tile-440x280.png'));
   console.log('Wrote promo-tile-440x280.png');
 
   const rightImg = await sharp(panelBuf)
-    .resize(MARQUEE_LEFT_W, MARQUEE_LEFT_H, { fit: 'cover', position: 'top' })
+    .resize(MARQUEE_LEFT_W, MARQUEE_LEFT_H, { fit: 'contain', background: BG, position: 'top' })
     .png()
     .toBuffer();
 
-  // —— 10 marquee stijlen + default bestand = stijl 1 (rijke classic) ——
+  // —— 10 marquee styles + default ——
   for (let s = 1; s <= 10; s++) {
     const leftPng = await svgToPng(marqueeLeftSvg(s));
     const name = `promo-marquee-style-${String(s).padStart(2, '0')}-1400x560.png`;
@@ -428,11 +480,12 @@ async function main() {
   }
   const defaultLeft = await svgToPng(marqueeLeftSvg(1));
   await compositeMarquee(defaultLeft, rightImg, 'promo-marquee-1400x560.png');
+  console.log('Wrote 10 marquee variants + default');
 
-  // —— Extension cover 1280×800: branding +zelfde details + echt paneel ——
+  // —— Extension cover 1480×560 ——
   const coverLeft = await svgToPng(extensionCoverLeftSvg());
   const coverPanel = await sharp(panelBuf)
-    .resize(COVER_PANEL_W, COVER_TOTAL_H, { fit: 'cover', position: 'top' })
+    .resize(COVER_PANEL_W, COVER_TOTAL_H, { fit: 'contain', background: BG, position: 'top' })
     .png()
     .toBuffer();
 
@@ -460,16 +513,6 @@ async function main() {
     .toFile(path.join(OUT_DIR, 'extension-cover-1480x560.png'));
   console.log('Wrote extension-cover-1480x560.png');
 
-  // —— 06: contextmenu-screenshot ——
-  if (fs.existsSync(CONTEXT_INPUT)) {
-    const cm = await sharp(CONTEXT_INPUT).metadata();
-    console.log('Source context menu:', CONTEXT_INPUT, `${cm.width}×${cm.height}`);
-    const ctxHero = await padToSize(sharp(CONTEXT_INPUT), 1280, 800);
-    await ctxHero.toFile(path.join(OUT_DIR, '06-context-menu-1280x800.png'));
-    console.log('Wrote 06-context-menu-1280x800.png');
-  } else {
-    console.log('Skip 06 (optional):', CONTEXT_INPUT, 'not found');
-  }
 }
 
 main().catch((e) => {

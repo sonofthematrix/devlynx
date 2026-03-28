@@ -1,4 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
-  <rect width="128" height="128" fill="#000000"/>
-  <text x="64" y="92" font-family="Arial Black, sans-serif" font-size="96" font-weight="900" fill="#ffffff" text-anchor="middle">D</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="bg" cx="42%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#1a1050"/>
+      <stop offset="60%" stop-color="#0d0b28"/>
+      <stop offset="100%" stop-color="#06060f"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe566"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="gold2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow2">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="22" fill="url(#bg)"/>
+
+  <!-- Very subtle gold border -->
+  <rect width="128" height="128" rx="22" fill="none" stroke="#facc15" stroke-width="2" opacity="0.25"/>
+
+  <!-- Outer triangle (bold stroke, filled gold) -->
+  <path d="M64 16 L112 106 L16 106 Z"
+        fill="none" stroke="url(#gold)" stroke-width="7"
+        stroke-linejoin="round" stroke-linecap="round"
+        filter="url(#glow)" opacity="0.95"/>
+
+  <!-- Eye almond - horizontal slit on dark bg -->
+  <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z"
+        fill="#07070f" opacity="0.95"/>
+
+  <!-- Eye outline (gold) -->
+  <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z"
+        fill="none" stroke="url(#gold2)" stroke-width="2.5" opacity="0.8"/>
+
+  <!-- Iris glow -->
+  <circle cx="64" cy="70" r="14" fill="url(#gold)" filter="url(#glow2)" opacity="0.4"/>
+
+  <!-- Iris solid -->
+  <circle cx="64" cy="70" r="12" fill="url(#gold)"/>
+
+  <!-- Vertical cat-slit pupil (lynx!) -->
+  <ellipse cx="64" cy="70" rx="3.5" ry="10" fill="#05050d"/>
+
+  <!-- Pupil glint -->
+  <ellipse cx="68" cy="65" rx="2.5" ry="3.5" fill="#fef9c3" opacity="0.75"/>
 </svg>

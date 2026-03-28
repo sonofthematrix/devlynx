@@ -193,6 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setLicenseStatus('Verifying…', '');
+    const _verifySlowTimer = setTimeout(() => {
+      setLicenseStatus('Still verifying… this can take up to 45 seconds.', '');
+    }, 10000);
     try {
       const deviceId = await getOrCreateDeviceId();
       let data = {};
@@ -230,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (_) {}
       }
       if (!okFetch) {
+        clearTimeout(_verifySlowTimer);
         setLicenseStatus('Server error during verification.', 'error');
         setStatus(serverOfflineMsg(), 'error');
         return;
@@ -240,6 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
         (data.license_token && String(data.license_token).trim()) ||
         (data.token && String(data.token).trim()) ||
         '';
+
+      clearTimeout(_verifySlowTimer);
 
       if (valid && !token) {
         setLicenseStatus('No license token from server. Configure LICENSE_JWT_PRIVATE_KEY on feed-server.', 'error');
@@ -276,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus(friendly, 'error');
       }
     } catch (err) {
+      clearTimeout(_verifySlowTimer);
       setLicenseStatus('Server error during verification.', 'error');
       setStatus(serverOfflineMsg(), 'error');
     }

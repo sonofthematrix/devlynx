@@ -103,7 +103,7 @@
           <span class="error-count-badge" id="error-count" hidden>0</span>
         </div>
       </div>
-      <p class="hint">Paste console output below, or <strong>Get Errors</strong> — only logs after this tab loaded (reload the page if needed). Network failures in DevTools are not captured unless the site logs them. The AI often starts with the <strong>first</strong> distinct error; paste more blocks or run Explain again for the rest.</p>
+      <p class="hint">Paste console output below, or <strong>Get Errors</strong> — only logs after this tab loaded (reload the page if needed). Network failures in DevTools are not captured unless the site logs them. The AI often starts with the <strong>first</strong> distinct error; paste more blocks or run Explain again for the rest. Note: errors inside payment iframes (e.g. Stripe checkout) cannot be captured.</p>
       <textarea id="error-explainer-input" rows="3" placeholder="Paste error or stack trace…"></textarea>
       <button type="button" id="error-explainer-btn" class="btn btn-secondary full mt-sm" data-requires-user-openai>Explain error</button>
       <p id="error-explainer-status" class="status"></p>
@@ -156,7 +156,22 @@
       <div class="row mt-md">
         <button type="button" id="reset-page-mods" class="btn btn-secondary full" title="Remove all AI mods for this site">Reset Site (Undo)</button>
       </div>
+      <div class="mt-md">
+        <label for="custom-css-input">Custom CSS</label>
+        <textarea id="custom-css-input" rows="3" placeholder="e.g. body { background: #111; } .header { display: none; }"></textarea>
+        <button type="button" id="custom-css-apply" class="btn btn-secondary full mt-sm">Apply CSS</button>
+      </div>
       <p id="custom-css-status" class="status"></p>
+    </section>
+
+    <section class="block">
+      <h2>Click-to-Edit</h2>
+      <p class="hint">Click elements on the page to edit text, colors, or hide them inline.</p>
+      <div class="quick-row">
+        <button type="button" id="start-inspect" class="btn btn-primary">Start</button>
+        <button type="button" id="stop-inspect" class="btn btn-secondary btn-stop">Stop</button>
+      </div>
+      <p id="inspect-status" class="status"></p>
     </section>
 
     <div class="group-title">3. Developer Tools</div>
@@ -246,7 +261,7 @@
       <div class="upgrade-modal-content">
         <h2 id="upgrade-modal-title" class="upgrade-modal-title">Your free AI trial has ended</h2>
         <p class="upgrade-modal-text">Upgrade to DevLynx Pro</p>
-        <p class="upgrade-modal-price-line">$35.99 USD · lifetime</p>
+        <p class="upgrade-modal-price-line">$19 USD · one-time · lifetime updates</p>
         <div class="upgrade-modal-actions">
           <div class="upgrade-modal-actions-row">
             <button type="button" id="upgrade-modal-btn" class="btn btn-primary btn-cta" data-upgrade-anchor>Upgrade</button>
@@ -278,9 +293,9 @@
       </div>
       <div class="upgrade-box" data-upgrade-link>
         <h3 class="upgrade-box-title">DevLynx Pro</h3>
-        <p class="upgrade-sub">$35.99 USD one-time purchase · Lifetime updates</p>
+        <p class="upgrade-sub">$19 USD one-time · Launch price · Lifetime updates</p>
         <div class="upgrade-actions">
-          <button type="button" id="buy-pro-btn" class="btn btn-primary btn-cta primary-upgrade" data-upgrade-anchor>Buy DevLynx Pro — $35.99</button>
+          <button type="button" id="buy-pro-btn" class="btn btn-primary btn-cta primary-upgrade" data-upgrade-anchor>Buy DevLynx Pro — $19</button>
           <button type="button" id="activate-license-toggle" class="btn btn-secondary secondary-upgrade" aria-expanded="false" aria-controls="license-panel" data-upgrade-anchor>
             Activate License
           </button>

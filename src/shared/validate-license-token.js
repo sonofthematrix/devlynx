@@ -92,8 +92,8 @@
     if (typeof payload.exp === 'number' && payload.exp < now) {
       return { ok: false, reason: 'expired', payload };
     }
-    if (payload.iss && payload.iss !== TOKEN_ISS) return { ok: false, reason: 'bad_iss', payload };
-    if (payload.aud && payload.aud !== TOKEN_AUD) return { ok: false, reason: 'bad_aud', payload };
+    if (payload.iss !== TOKEN_ISS) return { ok: false, reason: 'bad_iss', payload };
+    if (payload.aud !== TOKEN_AUD) return { ok: false, reason: 'bad_aud', payload };
 
     if (payload.extension_id && String(payload.extension_id) !== String(runtimeExtensionId)) {
       return { ok: false, reason: 'extension_mismatch', payload };
@@ -139,8 +139,8 @@
     if (typeof payload.exp === 'number' && payload.exp < now) {
       return { ok: false, reason: 'expired', payload };
     }
-    if (payload.iss && payload.iss !== TOKEN_ISS) return { ok: false, reason: 'bad_iss', payload };
-    if (payload.aud && payload.aud !== TOKEN_AUD) return { ok: false, reason: 'bad_aud', payload };
+    if (payload.iss !== TOKEN_ISS) return { ok: false, reason: 'bad_iss', payload };
+    if (payload.aud !== TOKEN_AUD) return { ok: false, reason: 'bad_aud', payload };
     if (payload.extension_id && String(payload.extension_id) !== String(runtimeExtensionId)) {
       return { ok: false, reason: 'extension_mismatch', payload };
     }

@@ -9,6 +9,11 @@ release/*.zip
 .env.*.local
 feed-server/.env
 feed-server/.env.local
+secrets.json
+credentials.json
+*.key
+*.p12
+config/secrets.yml
 
 # Local signing / packaging (do not publish)
 *.pem

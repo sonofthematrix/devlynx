@@ -44,3 +44,7 @@ Always rebuild after any `src/` change. Output goes to `dist/`.
 7. **Content script → background: use `chrome.runtime.sendMessage`** — never `chrome.tabs.sendMessage` (that goes the other direction: background/panel → content script).
 
 8. **If a fix fails twice, stop** — diagnose the root cause before attempting a third approach. Don't retry the same broken pattern.
+
+## Known Limitations
+
+- **Payment iframe errors cannot be captured** — errors from cross-origin iframes (Stripe, PayPal, etc.) are sandboxed by the browser. No MAIN-world hook (`onerror`, `addEventListener('error')`, `console.error`) in the parent frame can intercept them. This is a browser security boundary; do not attempt workarounds.

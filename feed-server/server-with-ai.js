@@ -192,8 +192,23 @@ async function persistScreenshot(baseFilename, imageBase64) {
   return { filepath };
 }
 
+// CORS: allow extension origin and localhost in dev; restrict on production
+const ALLOWED_ORIGINS = process.env.VERCEL
+  ? ['chrome-extension://', 'moz-extension://']
+  : ['*'];
+
+function getCorsOrigin(req) {
+  if (!process.env.VERCEL) return '*';
+  const origin = req && req.headers && req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.some((p) => origin.startsWith(p))) return origin;
+  return '';
+}
+
 function send(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  const corsOrigin = getCorsOrigin(res._devlynxReq || res.req);
+  const headers = { 'Content-Type': 'application/json' };
+  if (corsOrigin) headers['Access-Control-Allow-Origin'] = corsOrigin;
+  res.writeHead(status, headers);
   res.end(JSON.stringify(data));
 }
 
@@ -421,18 +436,75 @@ async function chat(systemPrompt, userContent) {
   });
 }
 
+// Simple in-memory per-IP rate limiter
+const _rlWindows = new Map(); // ip -> { count, windowStart }
+const RL_WINDOW_MS = 60 * 1000;
+const RL_LIMITS = {
+  ai: 20,         // POST / (AI calls) — protects OpenAI spend
+  license: 10,    // /verify-license, /trial-consume
+  trial_token: 3, // /trial-token — tight limit to prevent device_id fabrication
+  default: 100    // everything else
+};
+
+function getRlBucket(pathname) {
+  if (!pathname || pathname === '/' || pathname === '') return 'ai';
+  if (pathname === '/trial-token') return 'trial_token';
+  if (pathname === '/verify-license' || pathname === '/trial-consume') return 'license';
+  return 'default';
+}
+
+function checkRateLimit(ip, bucket) {
+  const limit = RL_LIMITS[bucket] || RL_LIMITS.default;
+  const now = Date.now();
+  const key = ip + ':' + bucket;
+  let entry = _rlWindows.get(key);
+  if (!entry || now - entry.windowStart > RL_WINDOW_MS) {
+    entry = { count: 1, windowStart: now };
+    _rlWindows.set(key, entry);
+    return true;
+  }
+  entry.count++;
+  if (entry.count > limit) return false;
+  return true;
+}
+
+// Periodically clean up stale entries to prevent memory growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of _rlWindows) {
+    if (now - entry.windowStart > RL_WINDOW_MS * 2) _rlWindows.delete(key);
+  }
+}, 5 * 60 * 1000);
+
 async function feedServerHandler(req, res) {
+  res._devlynxReq = req; // attach for CORS origin lookup in send()
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
+    const corsOrigin = getCorsOrigin(req);
+    const headers = {
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type'
-    });
+    };
+    if (corsOrigin) headers['Access-Control-Allow-Origin'] = corsOrigin;
+    res.writeHead(204, headers);
     res.end();
     return;
   }
 
-  const pathname = getRequestPathname(req);
+  // Rate limiting — skip for health checks
+  const _pathname = getRequestPathname(req);
+  if (_pathname !== '/health') {
+    // Use Vercel's trusted header when available; fall back to socket address (never trust raw x-forwarded-for leftmost)
+    const ip = (process.env.VERCEL
+      ? (req.headers['x-real-ip'] || req.headers['x-vercel-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim()
+      : (req.socket?.remoteAddress || 'unknown'));
+    const bucket = getRlBucket(_pathname);
+    if (!checkRateLimit(ip, bucket)) {
+      send(res, 429, { ok: false, error: 'Too many requests. Please slow down.' });
+      return;
+    }
+  }
+
+  const pathname = _pathname;
 
   try {
   // Root URL (e.g. opening the Vercel deployment in a browser)
@@ -457,7 +529,7 @@ async function feedServerHandler(req, res) {
   }
 
   if (req.method === 'GET' && pathname === '/health') {
-    send(res, 200, {
+    const base = {
       ok: true,
       connected: true,
       service: 'devlens-feed',
@@ -465,16 +537,20 @@ async function feedServerHandler(req, res) {
       serverVersion: '1.1.3',
       ai: !!OPENAI_API_KEY,
       apiKeyConfigured: !!OPENAI_API_KEY,
-      model: OPENAI_MODEL || 'gpt-4o-mini',
       licenseCheck: gumroadVerifyConfigured(),
-      licenseJwtIssuer: LICENSE_JWT_ISSUER,
-      licenseJwtAudience: LICENSE_JWT_AUDIENCE,
-      trialJwt: !!LICENSE_JWT_PRIVATE_KEY_PEM,
-      trialDefaultLimit: TRIAL_DEFAULT_LIMIT,
-      trialPersistence: trialStore.getTrialPersistenceMode(),
-      blobStorage: !!(process.env.BLOB_READ_WRITE_TOKEN || '').trim(),
-      runtime: process.env.VERCEL ? 'vercel' : 'node'
-    });
+      trialJwt: !!LICENSE_JWT_PRIVATE_KEY_PEM
+    };
+    // Only expose detailed config on localhost (not through Vercel/production)
+    if (!process.env.VERCEL) {
+      base.model = OPENAI_MODEL || 'gpt-4o-mini';
+      base.licenseJwtIssuer = LICENSE_JWT_ISSUER;
+      base.licenseJwtAudience = LICENSE_JWT_AUDIENCE;
+      base.trialDefaultLimit = TRIAL_DEFAULT_LIMIT;
+      base.trialPersistence = trialStore.getTrialPersistenceMode();
+      base.blobStorage = !!(process.env.BLOB_READ_WRITE_TOKEN || '').trim();
+      base.runtime = 'node';
+    }
+    send(res, 200, base);
     return;
   }
 
@@ -504,8 +580,12 @@ async function feedServerHandler(req, res) {
     return;
   }
 
-  // Debug: GET http://localhost:<PORT>/test-openai — verify OpenAI connection
+  // Debug: GET http://localhost:<PORT>/test-openai — verify OpenAI connection (disabled in production)
   if (req.method === 'GET' && pathname === '/test-openai') {
+    if (process.env.NODE_ENV === 'production') {
+      send(res, 404, { ok: false, error: 'Not found' });
+      return;
+    }
     if (!OPENAI_API_KEY) {
       send(res, 200, { status: 'error', ok: false, message: 'OPENAI_API_KEY not set in .env. Add: OPENAI_API_KEY=sk-...' });
       return;
@@ -532,8 +612,9 @@ async function feedServerHandler(req, res) {
     const extensionId = (body && body.extension_id != null) ? String(body.extension_id).trim() : '';
 
     // 1) Developer bypass: from localhost with no license key → Pro for local development
+    //    Disabled on Vercel/production — req.socket.remoteAddress is the proxy, not the real client.
     const remote = req.socket.remoteAddress || '';
-    const isLocalhost = remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1';
+    const isLocalhost = !process.env.VERCEL && (remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1');
     if (isLocalhost && !licenseKey) {
       const devTok = trySignProLicenseToken('developer-local', deviceId, extensionId);
       if (devTok) {

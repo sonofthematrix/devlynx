@@ -7,16 +7,16 @@
     "default_popup": "sidepanel/panel.html",
     "default_title": "DevLynx AI – Explain & debug any website",
     "default_icon": {
-      "16": "icons/icon128.png",
-      "32": "icons/icon128.png",
-      "48": "icons/icon128.png",
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
   },
   "icons": {
-    "16": "icons/icon128.png",
-    "32": "icons/icon128.png",
-    "48": "icons/icon128.png",
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "permissions": ["tabs", "activeTab", "storage", "downloads", "contextMenus", "scripting", "sidePanel"],

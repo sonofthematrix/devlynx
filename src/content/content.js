@@ -5,6 +5,13 @@
 (function () {
   'use strict';
 
+  // Remove any stale onMessage listener from a previous injection (e.g. after extension reload).
+  // Using remove+re-add instead of a skip-guard so the listener is always live and up-to-date.
+  if (typeof window.__devlynxOnMessageHandler === 'function') {
+    try { chrome.runtime.onMessage.removeListener(window.__devlynxOnMessageHandler); } catch (_) {}
+    window.__devlynxOnMessageHandler = null;
+  }
+
   // Nooit draaien op browser-interne of startpagina's (dubbel veilig naast manifest exclude_matches)
   try {
     const p = window.location.protocol;
@@ -25,18 +32,16 @@
     }
   }
 
-  function injectMod(css, js) {
+  function injectMod(css, js, showFeedback) {
     if (css && typeof css === 'string') {
-      const style = document.createElement('style');
-      style.setAttribute('data-devlens-mod', '1');
-      style.textContent = css;
-      (document.head || document.documentElement).appendChild(style);
+      // insertCSS (via background) is exempt from the page's CSP — works on Stripe, GitHub, etc.
+      chrome.runtime.sendMessage({ type: 'APPLY_CSS_MOD', css }).catch(() => {});
     }
     if (js && typeof js === 'string') {
-      const script = document.createElement('script');
-      script.setAttribute('data-devlens-mod', '1');
-      script.textContent = js;
-      (document.head || document.documentElement).appendChild(script);
+      // Background will try executeScript (MAIN world). If the page CSP blocks eval,
+      // it sends SHOW_MOD_STATUS back so we can notify the user. showFeedback=false
+      // suppresses the toast on silent page-load restoration.
+      chrome.runtime.sendMessage({ type: 'EXECUTE_MOD_JS', code: js, showFeedback: !!showFeedback }).catch(() => {});
     }
   }
 
@@ -65,31 +70,35 @@
     return path.join(' > ');
   }
 
-  // Load saved mod for this hostname on page load
+  // Load saved mod for this hostname on page load — silent (no CSP toast on restoration)
   const hostname = getHostname();
   if (hostname) {
     chrome.storage.local.get([STORAGE_PREFIX + hostname], (result) => {
       const data = result[STORAGE_PREFIX + hostname];
-      if (data && (data.css || data.js)) injectMod(data.css, data.js);
+      if (data && (data.css || data.js)) injectMod(data.css, data.js, false);
     });
   }
 
   try { console.log('🔧 DevLynx content script loaded'); } catch (_) {}
-  const capturedErrors = [];
-  /** MAIN-world capture via postMessage (see main-world-error-capture.js). */
-  const mainWorldPostedErrors = [];
+  // Persist across re-injections so errors captured before a reload aren't lost.
+  window.__devlynxCapturedErrors = window.__devlynxCapturedErrors || [];
+  const capturedErrors = window.__devlynxCapturedErrors;
+  window.__devlynxMainWorldErrors = window.__devlynxMainWorldErrors || [];
+  const mainWorldPostedErrors = window.__devlynxMainWorldErrors;
 
-  window.addEventListener(
-    'message',
-    function (ev) {
-      try {
-        if (!ev.data || ev.data.source !== '__DEVLYNX_ERR__') return;
-        if (typeof ev.data.detail !== 'string' || !ev.data.detail) return;
-        mainWorldPostedErrors.push(ev.data.detail);
-      } catch (_) {}
-    },
-    false
-  );
+  // Remove-then-re-add so re-injections never leave a second listener alive.
+  if (typeof window.__devlynxContentMsgHandler === 'function') {
+    try { window.removeEventListener('message', window.__devlynxContentMsgHandler, false); } catch (_) {}
+  }
+  window.__devlynxContentMsgHandler = function (ev) {
+    try {
+      if (ev.source !== window) return; // reject messages from other frames
+      if (!ev.data || ev.data.source !== '__DEVLYNX_ERR__') return;
+      if (typeof ev.data.detail !== 'string' || !ev.data.detail) return;
+      mainWorldPostedErrors.push(ev.data.detail);
+    } catch (_) {}
+  };
+  window.addEventListener('message', window.__devlynxContentMsgHandler, false);
 
   function toErrorText(arg) {
     if (arg == null) return String(arg);
@@ -100,8 +109,11 @@
   }
 
   function getAllCapturedErrors() {
-    const fromCustomEvent = Array.isArray(window.devlensErrors) ? window.devlensErrors : [];
-    const merged = mainWorldPostedErrors.concat(fromCustomEvent).concat(capturedErrors);
+    // Deduplicate each source individually first, then cross-deduplicate in the merge loop.
+    // This handles any residual double-push from listeners that fired twice.
+    const bridgeErrors = [...new Set(Array.isArray(window.devlensErrors) ? window.devlensErrors : [])];
+    const mainErrors = [...new Set(mainWorldPostedErrors)];
+const merged = mainErrors.concat(bridgeErrors).concat([...new Set(capturedErrors)]);
     const seen = new Set();
     const out = [];
     for (let i = 0; i < merged.length; i++) {
@@ -136,7 +148,7 @@
     console.log = function (...args) {
       try {
         const line = args.map(toErrorText).join(' ');
-        if (/error|fail|404|401|403|429|500/i.test(line)) {
+        if (/error|fail|404|401|403|429|500/i.test(line) && !line.startsWith('[DevLynx')) {
           capturedErrors.push('[LOG] ' + line);
         }
       } catch (_) {}
@@ -144,22 +156,22 @@
     };
   }
 
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  window.__devlynxOnMessageHandler = (message, _sender, sendResponse) => {
     if (message && message.action === 'getErrors') {
       const errors = getAllCapturedErrors();
       sendResponse({ success: true, errors, count: errors.length, timestamp: Date.now() });
-      return true;
+      return false;
     }
 
     if (message && message.action === 'ping') {
       sendResponse({ alive: true, script: 'content.js', timestamp: Date.now() });
-      return true;
+      return false;
     }
 
     if (message.type === 'GET_SELECTION') {
       const text = window.getSelection ? window.getSelection().toString() : '';
       sendResponse({ text: text || '' });
-      return true;
+      return false;
     }
     if (message.type === 'INJECT_AND_SAVE_MOD') {
       const { css, js, hostname: targetHost } = message;
@@ -175,7 +187,7 @@
         const newJs = (existing.js ? existing.js + '\n' : '') + (js || '');
         const payload = { css: newCss, js: newJs };
         chrome.storage.local.set({ [key]: payload }, () => {
-          injectMod(css || '', js || '');
+          injectMod(css || '', js || '', true); // showFeedback=true — user actively applied this mod
           sendResponse({ ok: true });
         });
       });
@@ -183,27 +195,29 @@
     }
 
     if (message.type === 'START_EXPLAIN_MODE') {
+      if (inspectMode) stopInspectMode();
       startExplainMode();
       sendResponse({ ok: true });
-      return true;
+      return false;
     }
 
     if (message.type === 'STOP_EXPLAIN_MODE') {
       stopExplainMode();
       sendResponse({ ok: true });
-      return true;
+      return false;
     }
 
     if (message.type === 'START_INSPECT_MODE') {
+      if (explainMode) stopExplainMode();
       startInspectMode();
       sendResponse({ ok: true });
-      return true;
+      return false;
     }
 
     if (message.type === 'STOP_INSPECT_MODE') {
       stopInspectMode();
       sendResponse({ ok: true });
-      return true;
+      return false;
     }
 
     if (message.type === 'RESET_PAGE_MODS') {
@@ -221,13 +235,19 @@
 
     if (message.type === 'GET_CONSOLE_ERRORS') {
       sendResponse({ errors: getAllCapturedErrors() });
-      return true;
+      return false;
     }
 
     if (message.type === 'SHOW_EXPLAIN_RESULT') {
       showExplainToast(message.answer != null ? String(message.answer) : '', false);
       sendResponse({ ok: true });
-      return true;
+      return false;
+    }
+
+    if (message.type === 'SHOW_MOD_STATUS') {
+      showExplainToast(message.message != null ? String(message.message) : '', false);
+      sendResponse({ ok: true });
+      return false;
     }
 
     if (message.type === 'EXPLAIN_LAST_RIGHT_CLICKED_ELEMENT') {
@@ -239,11 +259,12 @@
       } else {
         sendResponse({ ok: false, error: 'No element. Click Try it! then click an element on the page.' });
       }
-      return true;
+      return false;
     }
 
     return false;
-  });
+  };
+  chrome.runtime.onMessage.addListener(window.__devlynxOnMessageHandler);
 
   // --- UI for In-Page AI Explainer Toast ---
   let explainToastEl = null;
@@ -255,9 +276,10 @@
       document.body.appendChild(explainToastEl);
     }
     
-    const contentHtml = isLoading 
-      ? `<div class="devlens-loading-pulse">${text}</div>`
-      : `<div>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const contentHtml = isLoading
+      ? `<div class="devlens-loading-pulse">${escaped}</div>`
+      : `<div>${escaped}</div>`;
 
     explainToastEl.innerHTML = `
       <div class="devlens-explainer-header">
@@ -412,10 +434,10 @@ ${JSON.stringify(styleObj, null, 2)}
   }
 
   function onPageClick(e) {
-    e.preventDefault();
-    e.stopPropagation();
     const el = e.target;
     if (!el || el === overlayEl || (toolbarEl && toolbarEl.contains(el))) return;
+    e.preventDefault();
+    e.stopPropagation();
     if (el.classList.contains('devlens-inspect-hover')) el.classList.remove('devlens-inspect-hover');
     currentTarget = el;
     showToolbar(el);
@@ -440,11 +462,12 @@ ${JSON.stringify(styleObj, null, 2)}
     ].join('');
     document.body.appendChild(toolbarEl);
     const tRect = toolbarEl.getBoundingClientRect();
-    let left = rect.left + window.scrollX;
-    let top = rect.top + window.scrollY - tRect.height - 6;
-    if (top < 0) top = rect.top + rect.height + window.scrollY + 6;
-    if (left + tRect.width > document.documentElement.scrollWidth) left = document.documentElement.scrollWidth - tRect.width - 8;
-    if (left < 0) left = 8;
+    // position: fixed — coords are viewport-relative, no scroll offset needed
+    let left = rect.left;
+    let top = rect.top - tRect.height - 6;
+    if (top < 4) top = rect.bottom + 6;
+    if (left + tRect.width > window.innerWidth - 4) left = window.innerWidth - tRect.width - 8;
+    if (left < 4) left = 4;
     toolbarEl.style.left = left + 'px';
     toolbarEl.style.top = top + 'px';
 

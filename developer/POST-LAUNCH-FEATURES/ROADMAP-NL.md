@@ -1,7 +1,26 @@
 # Post-launch roadmap (intern — niet in Chrome Web Store copy)
 
-Dit document bevat planning **na** launch.  
+Dit document bevat planning **na** launch.
 **Niet** copiëren naar store listing zolang features niet live en getest zijn.
+
+---
+
+## Pricing strategy — Option 2: Early Adopter Versioning
+
+**Decision (2026-03-28):** Use early-adopter pricing framing. Never get stuck with a permanent low price.
+
+| Phase | Price | What's included |
+|-------|-------|-----------------|
+| Launch now | $35.99 (early adopter) | All current Pro features — lifetime |
+| Phase 2 ships | Raise to $59–69 | Phase 2 features for new buyers; existing lifetime holders keep what they bought |
+| Pro+ tier (future) | New tier, new price | Phase 3 features; existing Pro buyers get discount on upgrade, never cut off |
+
+**Rules:**
+- Existing lifetime buyers keep their features forever — no broken promises
+- "Lifetime" = lifetime of features they purchased, not infinite future features
+- New major tiers are new products; early adopters get upgrade discounts
+- Communicate on Gumroad: "Locking in early adopter price — goes up after X sales"
+- Set a threshold in Gumroad (e.g. 100 sales) or a hard date to trigger price increase
 
 ---
 

@@ -10,7 +10,7 @@ body.devlens-inspect-mode .devlens-inspect-hover {
 }
 
 .devlens-mod-toolbar {
-  position: absolute;
+  position: fixed;
   z-index: 2147483647;
   display: flex;
   flex-wrap: wrap;
