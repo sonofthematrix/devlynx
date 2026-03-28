@@ -449,7 +449,9 @@ const RL_LIMITS = {
 function getRlBucket(pathname) {
   if (!pathname || pathname === '/' || pathname === '') return 'ai';
   if (pathname === '/trial-token') return 'trial_token';
-  if (pathname === '/verify-license' || pathname === '/trial-consume') return 'license';
+  if (pathname === '/verify-license' || pathname === '/trial-consume' || pathname === '/license-status') {
+    return 'license';
+  }
   return 'default';
 }
 
@@ -552,6 +554,39 @@ async function feedServerHandler(req, res) {
       base.runtime = 'node';
     }
     send(res, 200, base);
+    return;
+  }
+
+  // GET /license-status?token= — panel refresh; verify RS256 Pro JWT (same keypair as verify-license)
+  if (req.method === 'GET' && pathname === '/license-status') {
+    const rawTok = readQueryParam(req, 'token');
+    if (!rawTok) {
+      send(res, 200, { ok: false, valid: false, error: 'missing_token' });
+      return;
+    }
+    if (!LICENSE_JWT_PRIVATE_KEY_PEM) {
+      send(res, 200, { ok: true, valid: true });
+      return;
+    }
+    let pub;
+    try {
+      pub = publicPemFromPrivate(LICENSE_JWT_PRIVATE_KEY_PEM);
+    } catch (e) {
+      console.error('license-status: invalid LICENSE_JWT_PRIVATE_KEY', e.message);
+      send(res, 200, { ok: false, valid: false, error: 'server_misconfigured' });
+      return;
+    }
+    const v = licenseJwt.verifyLicenseTokenServer(rawTok, pub, { algorithm: 'RS256' });
+    if (!v.ok || !v.payload) {
+      send(res, 200, { ok: true, valid: false, error: 'invalid_or_expired_token' });
+      return;
+    }
+    const pl = v.payload;
+    if (pl.plan === 'trial') {
+      send(res, 200, { ok: true, valid: false, error: 'not_pro_token' });
+      return;
+    }
+    send(res, 200, { ok: true, valid: true });
     return;
   }
 
