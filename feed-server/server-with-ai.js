@@ -13,7 +13,7 @@ const https = require('https');
 const licenseJwt = require('./license-jwt');
 const trialStore = require('./trial-store');
 const activationStore = require('./activation-store');
-const { blobStoreAccess } = require('./blob-access');
+const { blobStoreAccess, blobReadWriteToken } = require('./blob-access');
 const LICENSE_JWT_ISSUER = licenseJwt.TOKEN_ISSUER;
 const LICENSE_JWT_AUDIENCE = licenseJwt.TOKEN_AUDIENCE;
 
@@ -175,13 +175,13 @@ function getRequestPathname(req) {
 /** Screenshots: Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise local `screenshots/`. */
 async function persistScreenshot(baseFilename, imageBase64) {
   const buf = Buffer.from(imageBase64, 'base64');
-  const token = !!(process.env.BLOB_READ_WRITE_TOKEN || '').trim();
+  const token = blobReadWriteToken();
   if (token) {
     const { put } = require('@vercel/blob');
     const objectPathname = `screenshots/${Date.now()}_${baseFilename}`;
     const blob = await put(objectPathname, buf, {
       access: blobStoreAccess(),
-      token: process.env.BLOB_READ_WRITE_TOKEN.trim(),
+      token,
       contentType: 'image/png',
       addRandomSuffix: true
     });
@@ -538,7 +538,10 @@ async function feedServerHandler(req, res) {
       ai: !!OPENAI_API_KEY,
       apiKeyConfigured: !!OPENAI_API_KEY,
       licenseCheck: gumroadVerifyConfigured(),
-      trialJwt: !!LICENSE_JWT_PRIVATE_KEY_PEM
+      trialJwt: !!LICENSE_JWT_PRIVATE_KEY_PEM,
+      trialPersistence: trialStore.getTrialPersistenceMode(),
+      blobStorage: !!blobReadWriteToken(),
+      blobAccess: blobStoreAccess()
     };
     // Only expose detailed config on localhost (not through Vercel/production)
     if (!process.env.VERCEL) {
@@ -546,8 +549,6 @@ async function feedServerHandler(req, res) {
       base.licenseJwtIssuer = LICENSE_JWT_ISSUER;
       base.licenseJwtAudience = LICENSE_JWT_AUDIENCE;
       base.trialDefaultLimit = TRIAL_DEFAULT_LIMIT;
-      base.trialPersistence = trialStore.getTrialPersistenceMode();
-      base.blobStorage = !!(process.env.BLOB_READ_WRITE_TOKEN || '').trim();
       base.runtime = 'node';
     }
     send(res, 200, base);

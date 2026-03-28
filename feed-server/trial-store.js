@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { blobStoreAccess } = require('./blob-access');
+const { blobStoreAccess, blobReadWriteToken } = require('./blob-access');
 
 const FILE_PATH = path.join(__dirname, 'trials.json');
 const BLOB_PATHNAME = 'internal/devlynx-trials.json';
@@ -27,39 +27,44 @@ function compositeKey(deviceId, extensionId) {
   return `${d}|${e}`;
 }
 
-function blobToken() {
-  return (process.env.BLOB_READ_WRITE_TOKEN || '').trim();
-}
-
 /** @returns {'file'|'blob'|'memory'} */
 function getTrialPersistenceMode() {
   if (process.env.VERCEL) {
-    return blobToken() ? 'blob' : 'memory';
+    return blobReadWriteToken() ? 'blob' : 'memory';
   }
   return 'file';
 }
 
 async function loadStoreFromBlob() {
   const { list, get } = require('@vercel/blob');
-  const token = blobToken();
+  const token = blobReadWriteToken();
   const access = blobStoreAccess();
-  const r = await list({ prefix: 'internal/devlynx-trials', token, limit: 20 });
-  const hit = r.blobs.find((b) => b.pathname === BLOB_PATHNAME);
-  if (!hit) return {};
   try {
+    const r = await list({ prefix: 'internal/devlynx-trials', token, limit: 20 });
+    const hit = r.blobs.find((b) => b.pathname === BLOB_PATHNAME);
+    if (!hit) return {};
     let text = '';
     if (access === 'public') {
       const res = await fetch(hit.downloadUrl);
-      if (!res.ok) return {};
+      if (!res.ok) {
+        console.error('[trial-store] blob fetch failed', { status: res.status });
+        return {};
+      }
       text = await res.text();
     } else {
       const got = await get(hit.url, { access: 'private', token });
-      if (!got || got.statusCode !== 200 || !got.stream) return {};
+      if (!got || got.statusCode !== 200 || !got.stream) {
+        console.error('[trial-store] blob get failed', {
+          statusCode: got && got.statusCode
+        });
+        return {};
+      }
       text = await new Response(got.stream).text();
     }
     const o = JSON.parse(text);
     return o && typeof o === 'object' ? o : {};
-  } catch (_) {
+  } catch (err) {
+    console.error('[trial-store] blob load error', { message: err && err.message });
     return {};
   }
 }
@@ -68,7 +73,7 @@ async function saveStoreToBlob(obj) {
   const { put } = require('@vercel/blob');
   await put(BLOB_PATHNAME, JSON.stringify(obj), {
     access: blobStoreAccess(),
-    token: blobToken(),
+    token: blobReadWriteToken(),
     contentType: 'application/json',
     addRandomSuffix: false,
     allowOverwrite: true
@@ -92,7 +97,7 @@ let memFallback = {};
 
 async function loadStore() {
   if (process.env.VERCEL) {
-    if (blobToken()) return loadStoreFromBlob();
+    if (blobReadWriteToken()) return loadStoreFromBlob();
     return memFallback;
   }
   return loadStoreFromFile();
@@ -100,7 +105,7 @@ async function loadStore() {
 
 async function saveStore(obj) {
   if (process.env.VERCEL) {
-    if (blobToken()) {
+    if (blobReadWriteToken()) {
       await saveStoreToBlob(obj);
       return;
     }
