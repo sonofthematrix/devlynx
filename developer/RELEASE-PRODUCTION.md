@@ -30,6 +30,7 @@ npm run release
 - If you use server-signed trials, embed the matching **public** key in **`src/license-jwt-public.js`** before `npm run release`.
 - **Chrome Web Store:** upload that zip only.
 - **Sideload test:** Extensions → Developer mode → **Load unpacked** → select **`dist/`** after `npm run release` (or run `npm run build:prod` then load `dist/`).
+- **ZIP for testers (one folder, no nested `dist/`):** `npm run zip:manual` → **`release/DevLynx-AI-Manual-Install.zip`** — unzip, then Load unpacked → folder **`DevLynx-AI-Extension`**.
 
 ## 3. Version
 
@@ -42,3 +43,4 @@ Bump **`version`** in **`src/manifest.json`** before store submission, then `npm
 | `npm run release` | **Production** zip (`build:prod` + zip) |
 | `npm run package` | Dev zip (`build` + localhost API + zip) |
 | `npm run package:prod` | Same as release pipeline without alias |
+| `npm run zip:manual` | `build:prod` + **`release/DevLynx-AI-Manual-Install.zip`** (unpacked install folder for testers) |

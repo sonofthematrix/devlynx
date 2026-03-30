@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevLynx AI – Pricing</title>
-  <meta name="description" content="DevLynx AI – Free: inspect tools, API tester, site mods, and 20 AI trial uses. Pro: unlimited AI productivity.">
+  <title>DevLynx — Browser extensions for developers</title>
+  <meta name="description" content="DevLynx builds browser extensions for developers. AI debugging, SEO audits, product filling, and store submission — all from your browser sidebar.">
   <style>
     * { box-sizing: border-box; }
     body {
@@ -15,62 +15,101 @@
       min-height: 100vh;
       line-height: 1.5;
     }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
-    h1 { font-size: 28px; color: #eab308; margin-bottom: 8px; }
-    .tagline { color: #94a3b8; margin-bottom: 40px; font-size: 16px; }
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-      margin-bottom: 48px;
-    }
-    .plan-card {
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 60px 24px 40px; }
+
+    /* Header */
+    .site-header { text-align: center; margin-bottom: 64px; }
+    .site-header h1 { font-size: 36px; color: #eab308; margin: 0 0 12px; letter-spacing: -0.5px; }
+    .site-header p { color: #94a3b8; font-size: 17px; max-width: 520px; margin: 0 auto; }
+
+    /* Product grid */
+    .products { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 64px; }
+
+    .product-card {
       background: linear-gradient(160deg, #0f1221 0%, #090c17 100%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
       padding: 28px 24px;
       display: flex;
       flex-direction: column;
     }
-    .plan-card.pro {
-      border-color: rgba(250, 204, 21, 0.25);
-    }
-    .plan-card h2 { margin: 0 0 12px; font-size: 20px; color: #f8fafc; }
-    .plan-card .price { font-size: 32px; font-weight: 700; color: #eab308; margin-bottom: 4px; }
-    .plan-card .price-currency { font-size: 0.55em; font-weight: 600; color: #fde047; vertical-align: super; margin-left: 2px; }
-    .plan-card .price-note { font-size: 13px; color: #64748b; margin-bottom: 20px; }
-    .plan-card ul { list-style: none; margin: 0 0 24px; padding: 0; flex: 1; }
-    .plan-card li {
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-      font-size: 14px;
+    .product-card.featured { border-color: rgba(250, 204, 21, 0.3); }
+    .product-card.coming-soon { opacity: 0.7; }
+
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .card-top h2 { margin: 0; font-size: 18px; color: #f8fafc; }
+
+    .badge { display: inline-block; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+    .badge-live { background: linear-gradient(90deg, #f59e0b, #facc15); color: #000; }
+    .badge-soon { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+
+    .card-desc { color: #94a3b8; font-size: 14px; margin-bottom: 20px; flex: 1; }
+
+    .card-features { list-style: none; margin: 0 0 24px; padding: 0; }
+    .card-features li {
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(148,163,184,0.1);
+      font-size: 13px;
       color: #cbd5e1;
     }
-    .plan-card li:last-child { border-bottom: none; }
-    .plan-card li.locked { color: #64748b; }
-    .plan-card li.locked::before { content: '○ '; color: #475569; }
-    .plan-card li:not(.locked)::before { content: '✓ '; color: #22c55e; }
-    .plan-card .cta {
+    .card-features li:last-child { border-bottom: none; }
+    .card-features li::before { content: '✓ '; color: #22c55e; }
+    .card-features li.pro::before { content: '⭐ '; color: #eab308; }
+
+    .card-footer { margin-top: auto; }
+    .price { font-size: 26px; font-weight: 700; color: #eab308; margin-bottom: 2px; }
+    .price sup { font-size: 0.5em; vertical-align: super; }
+    .price-note { font-size: 12px; color: #64748b; margin-bottom: 16px; }
+
+    .cta {
       display: block;
       text-align: center;
-      padding: 12px 20px;
+      padding: 11px 20px;
       border-radius: 8px;
       font-weight: 600;
       text-decoration: none;
-      font-size: 15px;
+      font-size: 14px;
       transition: opacity 0.15s;
     }
-    .plan-card .cta:hover { opacity: 0.95; }
-    .cta-primary { background: linear-gradient(90deg, #f59e0b, #eab308); color: #000; border: none; }
-    .cta-secondary { background: transparent; color: #eab308; border: 2px solid rgba(250, 204, 21, 0.5); }
-    .badge { display: inline-block; background: linear-gradient(90deg, #f59e0b, #facc15); color: #000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
+    .cta:hover { opacity: 0.9; }
+    .cta-primary { background: linear-gradient(90deg, #f59e0b, #eab308); color: #000; }
+    .cta-secondary { background: transparent; color: #eab308; border: 2px solid rgba(250,204,21,0.4); }
+    .cta-disabled { background: rgba(148,163,184,0.1); color: #64748b; cursor: default; border: 1px solid rgba(148,163,184,0.15); }
+
+    /* Bundle */
+    .bundle {
+      background: linear-gradient(135deg, #0f1829 0%, #0a0f1e 100%);
+      border: 1px solid rgba(250,204,21,0.2);
+      border-radius: 14px;
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .bundle h2 { color: #eab308; margin: 0 0 8px; font-size: 22px; }
+    .bundle p { color: #94a3b8; margin: 0 0 20px; font-size: 15px; }
+    .bundle .bundle-price { font-size: 28px; font-weight: 700; color: #eab308; }
+    .bundle .bundle-was { font-size: 14px; color: #64748b; text-decoration: line-through; margin-left: 8px; }
+    .bundle-cta {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 32px;
+      background: linear-gradient(90deg, #f59e0b, #eab308);
+      color: #000;
+      font-weight: 700;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 15px;
+      opacity: 0.5;
+      cursor: default;
+    }
+    .bundle-note { font-size: 12px; color: #64748b; margin-top: 10px; }
+
     footer {
       text-align: center;
       padding: 32px 24px;
       color: #64748b;
       font-size: 13px;
       border-top: 1px solid rgba(255,255,255,0.07);
-      margin-top: 40px;
     }
     footer a { color: #8b97ad; text-decoration: none; }
     footer a:hover { color: #cbd5e1; }
@@ -78,47 +117,123 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>DevLynx AI</h1>
-    <p class="tagline"><strong>Free</strong> = core dev tools + AI trial. <strong>Pro</strong> = unlimited AI productivity.</p>
 
-    <div class="pricing-grid">
-      <div class="plan-card free">
-        <h2>Free</h2>
-        <div class="price">$0</div>
-        <div class="price-note">Forever free · Core tools</div>
-        <ul>
-          <li>Inspect element helper &amp; DOM highlight</li>
-          <li>API tester (HTTP calls)</li>
-          <li>Modify website (CSS / JS mods)</li>
-          <li>AI Mod Generator, Dev Assistant &amp; more — <strong>20 AI uses</strong> (shared trial)</li>
-          <li>Explain Element &amp; Error Explainer — use your AI trial</li>
+    <header class="site-header">
+      <h1>DevLynx</h1>
+      <p>Browser extensions that make your dev workflow faster — AI debugging, SEO, product filling, and store submissions from your sidebar.</p>
+    </header>
+
+    <div class="products">
+
+      <!-- DevLynx AI Pro -->
+      <div class="product-card featured">
+        <div class="card-top">
+          <h2>DevLynx AI</h2>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <p class="card-desc">AI developer toolkit in your sidebar. Explain elements, debug errors, modify pages, and test APIs — on any website.</p>
+        <ul class="card-features">
+          <li>Inspect element &amp; DOM highlight</li>
+          <li>API tester (CORS-free)</li>
+          <li>Modify any site (CSS / JS)</li>
+          <li>20 free AI uses (shared trial)</li>
+          <li class="pro">Unlimited AI — Explain Element</li>
+          <li class="pro">Unlimited AI — Error Explainer</li>
+          <li class="pro">Unlimited AI — Mod Generator</li>
         </ul>
-        <a href="#" class="cta cta-secondary" id="cta-free">Install / Current plan</a>
+        <div class="card-footer">
+          <div class="price"><sup>$</sup>19 <span style="font-size:14px;color:#64748b;font-weight:400;">Pro</span></div>
+          <div class="price-note">One-time · Lifetime updates · Early adopter price</div>
+          <a href="https://sonofthematrix.gumroad.com/l/devlynx-ai" class="cta cta-primary" target="_blank" rel="noopener noreferrer">Get Pro — $19</a>
+        </div>
       </div>
 
-      <div class="plan-card pro">
-        <h2>DevLynx Pro <span class="badge">PRO</span></h2>
-        <div class="price">$19 <span class="price-currency">USD</span></div>
-        <div class="price-note">Launch price · One-time · Lifetime updates</div>
-        <ul>
-          <li>Everything in Free (tools stay unlimited)</li>
-          <li><strong>Unlimited</strong> Explain Element</li>
-          <li><strong>Unlimited</strong> Error Explainer</li>
-          <li><strong>Unlimited</strong> AI Mod Generator</li>
-          <li><strong>Unlimited</strong> Dev Assistant</li>
-          <li>Future AI features &amp; priority support</li>
+      <!-- DevLynx SEO -->
+      <div class="product-card coming-soon">
+        <div class="card-top">
+          <h2>DevLynx SEO</h2>
+          <span class="badge badge-soon">COMING SOON</span>
+        </div>
+        <p class="card-desc">Instant SEO audit for any page, right in your sidebar. Score, issues, and fix hints without leaving the tab.</p>
+        <ul class="card-features">
+          <li>SEO score per page</li>
+          <li>Title, meta &amp; heading analysis</li>
+          <li>Missing alt-text detection</li>
+          <li class="pro">Competitor comparison</li>
+          <li class="pro">Score history tracking</li>
+          <li class="pro">Sitemap checker</li>
         </ul>
-        <a href="https://sonofthematrix.gumroad.com/l/devlynx-ai" class="cta cta-primary" id="cta-pro" target="_blank" rel="noopener noreferrer">Get Pro — $19</a>
+        <div class="card-footer">
+          <div class="price"><sup>$</sup>19 <span style="font-size:14px;color:#64748b;font-weight:400;">Pro</span></div>
+          <div class="price-note">One-time · Lifetime updates</div>
+          <span class="cta cta-disabled">Coming soon</span>
+        </div>
       </div>
+
+      <!-- DevLynx Fill -->
+      <div class="product-card coming-soon">
+        <div class="card-top">
+          <h2>DevLynx Fill</h2>
+          <span class="badge badge-soon">COMING SOON</span>
+        </div>
+        <p class="card-desc">AI product filler for e-commerce. Paste a URL or description — AI fills title, description, meta, and alt-text instantly.</p>
+        <ul class="card-features">
+          <li>AI-generated product titles</li>
+          <li>Description &amp; meta filling</li>
+          <li>Alt-text generation</li>
+          <li class="pro">Bulk fill multiple products</li>
+          <li class="pro">WooCommerce variants support</li>
+          <li class="pro">Export to CSV</li>
+        </ul>
+        <div class="card-footer">
+          <div class="price"><sup>$</sup>29 <span style="font-size:14px;color:#64748b;font-weight:400;">Pro</span></div>
+          <div class="price-note">One-time · Lifetime updates</div>
+          <span class="cta cta-disabled">Coming soon</span>
+        </div>
+      </div>
+
+      <!-- DevLynx Ship -->
+      <div class="product-card coming-soon">
+        <div class="card-top">
+          <h2>DevLynx Ship</h2>
+          <span class="badge badge-soon">COMING SOON</span>
+        </div>
+        <p class="card-desc">Chrome extension submission autopilot. Fill store forms, upload screenshots, and track submission status across all browser stores.</p>
+        <ul class="card-features">
+          <li>Auto-fill Chrome Web Store forms</li>
+          <li>Screenshot upload helper</li>
+          <li>Submission status tracking</li>
+          <li class="pro">Edge + Opera store support</li>
+          <li class="pro">Changelog generator</li>
+          <li class="pro">Auto version bump</li>
+        </ul>
+        <div class="card-footer">
+          <div class="price"><sup>$</sup>19 <span style="font-size:14px;color:#64748b;font-weight:400;">Pro</span></div>
+          <div class="price-note">One-time · Lifetime updates</div>
+          <span class="cta cta-disabled">Coming soon</span>
+        </div>
+      </div>
+
     </div>
 
-    <p style="color: #94a3b8; font-size: 14px;">After purchase you will receive a license key by email. Enter it in the extension: right‑click the extension icon → Options → paste your key → Verify with server.</p>
+    <!-- Bundle -->
+    <div class="bundle">
+      <h2>DevLynx Bundle</h2>
+      <p>All 4 extensions. One license. Everything you need in your browser sidebar.</p>
+      <div>
+        <span class="bundle-price">$59</span>
+        <span class="bundle-was">$86</span>
+      </div>
+      <div class="bundle-note">Save $27 vs buying separately · Coming when all 4 are live</div>
+      <span class="bundle-cta">Coming soon</span>
+    </div>
+
   </div>
+
   <footer>
-    © 2026 DevLynx AI ·
+    © 2026 DevLynx ·
     <a href="/privacy">Privacy Policy</a> ·
-    <a href="mailto:sonofthematrix@hotmail.com">Support</a> ·
-    <a href="https://sonofthematrix.gumroad.com/l/devlynx-ai" target="_blank" rel="noopener noreferrer">Buy Pro</a>
+    <a href="mailto:support@devlynx.dev">Support</a>
   </footer>
 </body>
 </html>

@@ -57,7 +57,9 @@ DevLynx AI is a single-purpose **developer tool**: it helps you **explain, debug
 ```
 Inspect, debug, and modify any website — with AI where you enable it.
 
-DevLynx AI is an AI-powered developer toolkit in a side panel: explain DOM elements, understand console errors, ask a dev assistant, generate page mods, run an HTTP API tester, capture screenshots, and use context-menu shortcuts on any site.
+DevLynx AI lives in your browser's side panel and stays open while you browse. Click the toolbar icon once — the panel pins to the side of any tab. No popups, no switching windows: your AI dev toolkit is always one glance away.
+
+It's an AI-powered developer toolkit: explain DOM elements, understand console errors, ask a dev assistant, generate page mods, run an HTTP API tester, capture screenshots, and use context-menu shortcuts on any site.
 
 KEY FEATURES
 
@@ -86,7 +88,7 @@ Add your OpenAI API key under API & Environment in the panel (BYOK). The default
 
 PRIVACY (SUMMARY)
 
-We do not sell browsing history or run ad profiling. Your OpenAI API key is stored only in this browser on your device — not for resale. The extension contacts our hosted service for health, licensing, and trial enforcement as configured; AI-related requests use your key and may go to OpenAI and/or our feed as needed for each feature. The API tester sends requests only to URLs you explicitly enter. Details: https://devlynx-black.vercel.app/privacy
+We do not sell browsing history or run ad profiling. Your OpenAI API key is stored only in this browser on your device — not for resale. The extension contacts our hosted service for health, licensing, and trial enforcement as configured; AI-related requests use your key and may go to OpenAI and/or our feed as needed for each feature. The API tester sends requests only to URLs you explicitly enter. Details: https://devlynx.dev/privacy
 
 PERMISSIONS
 
@@ -94,7 +96,7 @@ Broad access (<all_urls>) is required so developer features work on any site you
 
 SUPPORT
 
-mailto:sonofthematrix@hotmail.com
+mailto:support@devlynx.dev
 ```
 
 ### Permission justification (plak in het dashboard)
@@ -153,8 +155,7 @@ inspect element, DOM inspector, debug website, JavaScript errors, modify website
 
 ### Support URL
 
-Vervang door echte URL, bijvoorbeeld:  
-`https://github.com/your-org/devlens-saas` of je `website/` landing.
+`mailto:support@devlynx.dev`
 
 ---
 
@@ -170,7 +171,8 @@ Gebruik dit in je listing/website copy zonder toekomstclaims:
 
 - **Web developer focus:** built for frontend/full-stack debug workflows, not generic AI chat.
 - **Real browser context:** explain elements and errors on the actual page you are working on.
-- **All-in-one side panel:** explain element, error capture+explain, dev assistant, API tester, mod generator, screenshot.
+- **Persistent side panel:** pins to the side of any tab — stays open while you browse, no popup that closes on every click.
+- **All-in-one toolkit:** explain element, error capture+explain, dev assistant, API tester, mod generator, screenshot.
 - **Privacy-first BYOK:** users add their own OpenAI key; key stays local in browser storage.
 - **Practical outcomes:** action-oriented fixes and implementation guidance, not only theory.
 

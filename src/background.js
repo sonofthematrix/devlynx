@@ -4,8 +4,12 @@ importScripts('shared/validate-license-token.js');
 // Service worker for Opera extension (Manifest V3)
 // Runs in the background; survives until idle.
 
+chrome.action.onClicked.addListener((tab) => {
+  chrome.sidePanel.open({ tabId: tab.id }).catch(() => {});
+});
+
 /** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
-const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app/api';
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://api.devlynx.dev/api';
 /** Replaced at build: `npm run build` / `build:prod`; placeholder → hosted API so unpacked dev works without local feed server. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
@@ -325,7 +329,7 @@ function consumeAiRateLimitSlotStorage() {
           count += 1;
           if (count > AI_RATE_LIMIT_MAX) {
             console.warn('[devlynx-security] client_openai_rate_limit_blocked');
-            resolve('Rate limit exceeded. Please wait.');
+            resolve('Rate limit reached. Please wait 60 seconds before trying again.');
             return;
           }
           chrome.storage.local.set(
