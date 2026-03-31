@@ -6,15 +6,18 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const JavaScriptObfuscator = require('javascript-obfuscator');
 
 const SRC_DIR = path.join(__dirname, '..', 'src');
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const SKIP_OBFUSCATE = process.env.SKIP_OBFUSCATE === '1' || process.argv.includes('--no-obfuscate');
 const IS_PRODUCTION_BUILD = process.argv.includes('--production');
+const PROD_DEV_UNLOCK_SENTINEL =
+  '__DEVLYNX_PROD_UNLOCK_DISABLED_' + crypto.randomBytes(24).toString('hex') + '__';
 
 /** Default feed API for dev + prod builds. Override: DEVLYNX_FEED_LOCAL=1, --local-feed, or DEVLYNX_FEED_API=https://... */
-const HOSTED_FEED_API = (process.env.DEVLYNX_FEED_API || 'https://devlynx-black.vercel.app/api').trim();
+const HOSTED_FEED_API = (process.env.DEVLYNX_FEED_API || 'https://api.devlynx.dev/api').trim();
 const LOCAL_FEED_API = 'http://localhost:2847';
 const useLocalFeed =
   process.argv.includes('--local-feed') || process.env.DEVLYNX_FEED_LOCAL === '1';
@@ -26,6 +29,18 @@ function injectDebugModeIfDev(code) {
     return code.replace(/\bconst DEBUG_MODE = false\b/g, 'const DEBUG_MODE = true');
   }
   return code;
+}
+
+function stripDevUnlockForProduction(code, relPath) {
+  if (!IS_PRODUCTION_BUILD || typeof code !== 'string') return code;
+  const next = code.replace(
+    /\bconst\s+DEVLYNX_DEV_UNLOCK_KEY\s*=\s*(['"]).*?\1\s*;/g,
+    `const DEVLYNX_DEV_UNLOCK_KEY = '${PROD_DEV_UNLOCK_SENTINEL}';`
+  );
+  if (next !== code) {
+    console.log('Production hardening: neutralized DEVLYNX_DEV_UNLOCK_KEY in', relPath);
+  }
+  return next;
 }
 
 // Obfuscator options: MV3-safe (no eval, no self-defending in SW)
@@ -109,6 +124,7 @@ function build() {
     if (ext === '.js') {
       ensureDir(path.dirname(distPath));
       let code = fs.readFileSync(srcPath, 'utf8');
+      code = stripDevUnlockForProduction(code, rel);
       if (rel === 'license-jwt-public.js' && IS_PRODUCTION_BUILD) {
         code = code.replace(
           /g\.DEVLYNX_LICENSE_JWT_DEV_SECRET\s*=\s*[^;]+;/,

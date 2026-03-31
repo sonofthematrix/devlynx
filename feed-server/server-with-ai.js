@@ -122,6 +122,22 @@ function readQueryParam(req, name) {
   }
 }
 
+function hashForLog(value) {
+  const raw = String(value || '');
+  return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 12);
+}
+
+function getRequestIp(req) {
+  const header = process.env.VERCEL
+    ? (req.headers['x-real-ip'] || req.headers['x-vercel-forwarded-for'] || req.socket?.remoteAddress || 'unknown')
+    : (req.socket?.remoteAddress || 'unknown');
+  return String(header).split(',')[0].trim() || 'unknown';
+}
+
+function logSecurity(event, fields) {
+  console.warn('[devlynx-security]', event, fields || {});
+}
+
 console.log('OpenAI key loaded:', OPENAI_API_KEY ? 'YES' : 'NO');
 console.log('License JWT private key (trial / license signing):', LICENSE_JWT_PRIVATE_KEY_PEM ? 'YES' : 'NO');
 if (!OPENAI_API_KEY) {
@@ -438,11 +454,18 @@ async function chat(systemPrompt, userContent) {
 
 // Simple in-memory per-IP rate limiter
 const _rlWindows = new Map(); // ip -> { count, windowStart }
+const _trialTokenCooldownByTuple = new Map();
 const RL_WINDOW_MS = 60 * 1000;
+const TRIAL_TOKEN_COOLDOWN_MS = Math.max(
+  0,
+  parseInt(process.env.DEVLYNX_TRIAL_TOKEN_COOLDOWN_MS || '5000', 10) || 5000
+);
 const RL_LIMITS = {
   ai: 20,         // POST / (AI calls) — protects OpenAI spend
   license: 10,    // /verify-license, /trial-consume
   trial_token: 3, // /trial-token — tight limit to prevent device_id fabrication
+  trial_token_tuple: 2,   // /trial-token per IP + device/extension tuple
+  trial_consume_tuple: 12, // /trial-consume per IP + device/extension tuple
   default: 100    // everything else
 };
 
@@ -455,10 +478,10 @@ function getRlBucket(pathname) {
   return 'default';
 }
 
-function checkRateLimit(ip, bucket) {
+function checkRateLimit(ip, bucket, scopeKey = '') {
   const limit = RL_LIMITS[bucket] || RL_LIMITS.default;
   const now = Date.now();
-  const key = ip + ':' + bucket;
+  const key = scopeKey ? ip + ':' + bucket + ':' + scopeKey : ip + ':' + bucket;
   let entry = _rlWindows.get(key);
   if (!entry || now - entry.windowStart > RL_WINDOW_MS) {
     entry = { count: 1, windowStart: now };
@@ -470,16 +493,31 @@ function checkRateLimit(ip, bucket) {
   return true;
 }
 
+function checkTrialTokenCooldown(tupleHash, now = Date.now()) {
+  if (TRIAL_TOKEN_COOLDOWN_MS <= 0) return { ok: true, retryAfterMs: 0 };
+  const last = _trialTokenCooldownByTuple.get(tupleHash) || 0;
+  const delta = now - last;
+  if (delta < TRIAL_TOKEN_COOLDOWN_MS) {
+    return { ok: false, retryAfterMs: TRIAL_TOKEN_COOLDOWN_MS - delta };
+  }
+  _trialTokenCooldownByTuple.set(tupleHash, now);
+  return { ok: true, retryAfterMs: 0 };
+}
+
 // Periodically clean up stale entries to prevent memory growth
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of _rlWindows) {
     if (now - entry.windowStart > RL_WINDOW_MS * 2) _rlWindows.delete(key);
   }
+  for (const [key, ts] of _trialTokenCooldownByTuple) {
+    if (now - ts > TRIAL_TOKEN_COOLDOWN_MS * 4) _trialTokenCooldownByTuple.delete(key);
+  }
 }, 5 * 60 * 1000);
 
 async function feedServerHandler(req, res) {
   res._devlynxReq = req; // attach for CORS origin lookup in send()
+  const requestIp = getRequestIp(req);
   if (req.method === 'OPTIONS') {
     const corsOrigin = getCorsOrigin(req);
     const headers = {
@@ -495,12 +533,13 @@ async function feedServerHandler(req, res) {
   // Rate limiting — skip for health checks
   const _pathname = getRequestPathname(req);
   if (_pathname !== '/health') {
-    // Use Vercel's trusted header when available; fall back to socket address (never trust raw x-forwarded-for leftmost)
-    const ip = (process.env.VERCEL
-      ? (req.headers['x-real-ip'] || req.headers['x-vercel-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim()
-      : (req.socket?.remoteAddress || 'unknown'));
     const bucket = getRlBucket(_pathname);
-    if (!checkRateLimit(ip, bucket)) {
+    if (!checkRateLimit(requestIp, bucket)) {
+      logSecurity('rate_limit_blocked', {
+        path: _pathname,
+        bucket,
+        ipHash: hashForLog(requestIp)
+      });
       send(res, 429, { ok: false, error: 'Too many requests. Please slow down.' });
       return;
     }
@@ -601,16 +640,65 @@ async function feedServerHandler(req, res) {
     }
     const deviceId = readQueryParam(req, 'device_id');
     const extensionId = readQueryParam(req, 'extension_id');
-    if (!deviceId || !extensionId) {
-      send(res, 200, { ok: false, error: 'Missing device_id or extension_id.' });
+    const idCheck = trialStore.validateTrialIdentity(deviceId, extensionId);
+    if (!idCheck.ok) {
+      logSecurity('trial_token_bad_identity', {
+        path: pathname,
+        reason: idCheck.reason,
+        ipHash: hashForLog(requestIp),
+        deviceIdLen: deviceId.length,
+        extensionIdLen: extensionId.length
+      });
+      send(res, 200, { ok: false, error: 'Missing or invalid device_id or extension_id.', error_code: 'bad_request' });
+      return;
+    }
+    let tupleHash = '';
+    try {
+      tupleHash = hashForLog(trialStore.compositeKey(idCheck.deviceId, idCheck.extensionId));
+    } catch (err) {
+      logSecurity('trial_token_bad_identity', {
+        path: pathname,
+        reason: err && err.code ? err.code : 'bad_identity',
+        ipHash: hashForLog(requestIp)
+      });
+      send(res, 200, { ok: false, error: 'Missing or invalid device_id or extension_id.', error_code: 'bad_request' });
+      return;
+    }
+    if (!checkRateLimit(requestIp, 'trial_token_tuple', tupleHash)) {
+      logSecurity('trial_token_rate_limited', {
+        path: pathname,
+        ipHash: hashForLog(requestIp),
+        tupleHash
+      });
+      send(res, 429, { ok: false, error: 'Too many trial token requests. Please slow down.' });
+      return;
+    }
+    const cooldown = checkTrialTokenCooldown(tupleHash);
+    if (!cooldown.ok) {
+      logSecurity('trial_token_cooldown_blocked', {
+        path: pathname,
+        ipHash: hashForLog(requestIp),
+        tupleHash,
+        retryAfterMs: cooldown.retryAfterMs
+      });
+      send(res, 429, {
+        ok: false,
+        error: 'Please wait before requesting a new trial token.',
+        retry_after_ms: cooldown.retryAfterMs
+      });
       return;
     }
     try {
-      const rem = await trialStore.ensureTrialRemaining(deviceId, extensionId, TRIAL_DEFAULT_LIMIT);
-      const token = signTrialJwt(deviceId, extensionId, rem);
+      const rem = await trialStore.ensureTrialRemaining(idCheck.deviceId, idCheck.extensionId, TRIAL_DEFAULT_LIMIT);
+      const token = signTrialJwt(idCheck.deviceId, idCheck.extensionId, rem);
       send(res, 200, { ok: true, token, trial_remaining: rem });
     } catch (err) {
       console.error('trial-token error:', err);
+      logSecurity('trial_token_failed', {
+        path: pathname,
+        ipHash: hashForLog(requestIp),
+        reason: err && err.code ? err.code : 'trial_token_failed'
+      });
       send(res, 200, { ok: false, error: err.message || 'trial_token_failed' });
     }
     return;
@@ -784,13 +872,31 @@ async function feedServerHandler(req, res) {
     }
     const deviceId = String(pl.device_id || '').trim();
     const extensionId = String(pl.extension_id || '').trim();
-    if (!deviceId || !extensionId) {
-      send(res, 200, { ok: false, error: 'bad_claims' });
+    const idCheck = trialStore.validateTrialIdentity(deviceId, extensionId);
+    if (!idCheck.ok) {
+      logSecurity('trial_consume_bad_identity', {
+        path: pathname,
+        reason: idCheck.reason,
+        ipHash: hashForLog(requestIp),
+        deviceIdLen: deviceId.length,
+        extensionIdLen: extensionId.length
+      });
+      send(res, 200, { ok: false, error: 'bad_claims', error_code: 'bad_request' });
+      return;
+    }
+    const tupleHash = hashForLog(trialStore.compositeKey(idCheck.deviceId, idCheck.extensionId));
+    if (!checkRateLimit(requestIp, 'trial_consume_tuple', tupleHash)) {
+      logSecurity('trial_consume_rate_limited', {
+        path: pathname,
+        ipHash: hashForLog(requestIp),
+        tupleHash
+      });
+      send(res, 429, { ok: false, error: 'Too many trial consume requests. Please slow down.' });
       return;
     }
     try {
-      const result = await trialStore.consumeTrial(deviceId, extensionId, pl.trial_remaining);
-      const newTok = signTrialJwt(deviceId, extensionId, result.trial_remaining);
+      const result = await trialStore.consumeTrial(idCheck.deviceId, idCheck.extensionId, pl.trial_remaining);
+      const newTok = signTrialJwt(idCheck.deviceId, idCheck.extensionId, result.trial_remaining);
       if (result.kind === 'empty') {
         send(res, 200, {
           ok: false,

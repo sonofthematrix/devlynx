@@ -84,11 +84,11 @@ Pro: unlimited AI for Explain Element, Error Explainer, and other AI features. P
 
 SETUP
 
-Add your OpenAI API key under API & Environment in the panel (BYOK). The default build uses the hosted DevLynx feed; advanced users may point builds at a local feed server (see project documentation).
+Add your OpenAI API key under API & Environment in the panel (BYOK). In the default extension flow, AI calls go directly from the extension to OpenAI with your key. The hosted DevLynx feed is used for health, licensing, trial enforcement, and optional server-backed features (for example screenshot storage). Advanced users may point builds at a local feed server (see project documentation).
 
 PRIVACY (SUMMARY)
 
-We do not sell browsing history or run ad profiling. Your OpenAI API key is stored only in this browser on your device — not for resale. The extension contacts our hosted service for health, licensing, and trial enforcement as configured; AI-related requests use your key and may go to OpenAI and/or our feed as needed for each feature. The API tester sends requests only to URLs you explicitly enter. Details: https://devlynx.dev/privacy
+We do not sell browsing history or run ad profiling. Your OpenAI API key is stored only in this browser on your device — not for resale. AI requests in the default extension flow go directly to OpenAI with your BYOK key. The extension contacts our hosted service for health, licensing, trial enforcement, and optional server-backed features (such as screenshot storage). The API tester sends requests only to URLs you explicitly enter. Details: https://devlynx.dev/privacy
 
 PERMISSIONS
 
@@ -112,7 +112,7 @@ Host access is used only to:
 • apply temporary CSS/JS modifications the user requests (AI Mod Generator / site mods)
 • run the API tester against URLs the user explicitly enters (any origin they type)
 
-We do not use this access to harvest browsing history for advertising. The user’s OpenAI API key is stored locally in the extension. Network traffic may go to: OpenAI (when the user configures BYOK), our hosted feed API for license/trial/health and related features, optional license verification (e.g. Gumroad), and user-chosen API tester targets. No silent bulk collection of page content for unrelated purposes.
+We do not use this access to harvest browsing history for advertising. The user’s OpenAI API key is stored locally in the extension. Network traffic may go to: OpenAI (BYOK AI calls from the extension), our hosted feed API for license/trial/health and optional server-backed features, optional license verification (e.g. Gumroad), and user-chosen API tester targets. No silent bulk collection of page content for unrelated purposes.
 ```
 
 ### Privacy policy — punten voor je publieke pagina (`[PRIVACY_URL]`)
@@ -121,7 +121,7 @@ Gebruik een eigen pagina; minimum-inhoud:
 
 - Geen verkoop van browse-historie; geen advertentie-profielen.  
 - **BYOK:** OpenAI-sleutel alleen **lokaal in de browser**; billing bij OpenAI.  
-- **Hosted feed:** licentie, trial, health, eventuele server-kanten van AI/screenshots zoals geïmplementeerd — in het kort benoemen.  
+- **Hosted feed:** licentie, trial, health en optionele server-backed functies (zoals screenshot-opslag) — in het kort benoemen.  
 - **API tester:** verkeer naar **door jou ingevoerde** endpoints; derde partijen vallen onder hun eigen policies.  
 - **Gumroad** (indien actief): aankoop/licentie.  
 - Contact voor privacyvragen.

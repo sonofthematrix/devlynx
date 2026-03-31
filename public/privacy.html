@@ -61,7 +61,7 @@
     <p class="updated">Last updated: March 2026</p>
 
     <div class="highlight">
-      Short version: We don't sell your data, track your browsing, or store your API key. The extension runs in your browser. License verification is the only data that touches our server.
+      Short version: We don't sell your data, track your browsing, or store your API key. The extension runs in your browser. BYOK AI calls go directly to OpenAI; our server is used for license/trial/health and optional server-backed features.
     </div>
 
     <h2>Who we are</h2>
@@ -80,12 +80,12 @@
     <p>If you choose to use your own OpenAI API key (Bring Your Own Key), that key is stored exclusively in your browser using the Chrome Storage API. It is sent directly from your browser to OpenAI's servers when you use AI features. It never passes through the DevLynx server.</p>
 
     <h2>What our server does receive</h2>
-    <p>The DevLynx feed server (hosted on Vercel) receives the following when you use server-side features:</p>
+    <p>The DevLynx feed server (hosted on Vercel) receives the following when you use license, trial, health, or optional server-backed features:</p>
     <ul>
-      <li><strong>License verification:</strong> your Gumroad license key and a device ID generated locally in your browser, used to enforce the device limit on your license</li>
-      <li><strong>Trial tracking:</strong> an anonymous device ID used to count your free AI trial uses — no name, email, or account required</li>
-      <li><strong>AI requests:</strong> the text prompt you send (e.g. a question or error message) when using server-side AI. This is forwarded to OpenAI and not stored by us</li>
-      <li><strong>Screenshots:</strong> if you use the screenshot feature with server storage enabled, the image is stored in Vercel Blob storage tied to your session</li>
+      <li><strong>License verification:</strong> your Gumroad license key plus a locally generated device ID and extension ID, used to enforce license activation/device limits</li>
+      <li><strong>Trial tracking:</strong> a locally generated device ID and extension ID used to issue and consume free-trial tokens — no name, email, or account required</li>
+      <li><strong>Screenshots (optional server save):</strong> if you choose screenshot save via server, image data is sent to the feed server and stored in Vercel Blob</li>
+      <li><strong>Optional custom server AI mode:</strong> if you run DevLynx with a custom server-side AI path, prompt text may pass through that server to OpenAI</li>
       <li><strong>Health checks:</strong> the extension pings <code>/health</code> to verify the server is reachable — no user data is sent</li>
     </ul>
 
@@ -106,7 +106,7 @@
     <ul>
       <li>Trial usage counts are stored in Vercel Blob and expire after 90 days of inactivity</li>
       <li>License activation records are kept for the duration of your license to enforce device limits</li>
-      <li>Screenshots stored via server storage can be deleted by clearing your browser data or contacting support</li>
+      <li>If screenshots are stored via server storage, contact support to request deletion</li>
     </ul>
 
     <h2>Chrome Web Store permissions</h2>

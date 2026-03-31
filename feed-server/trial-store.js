@@ -14,6 +14,8 @@ const { blobStoreAccess, blobReadWriteToken } = require('./blob-access');
 
 const FILE_PATH = path.join(__dirname, 'trials.json');
 const BLOB_PATHNAME = 'internal/devlynx-trials.json';
+const MAX_TRIAL_ID_LEN = 200;
+const SAFE_TRIAL_ID_RE = /^[A-Za-z0-9._:-]+$/;
 
 function defaultTrialCap() {
   let n = parseInt(process.env.DEVLYNX_TRIAL_LIMIT || '20', 10);
@@ -21,10 +23,39 @@ function defaultTrialCap() {
   return Math.min(n, 100000);
 }
 
+function normalizeTrialDeviceId(deviceId) {
+  return String(deviceId || '').trim();
+}
+
+function normalizeTrialExtensionId(extensionId) {
+  return String(extensionId || '').trim().toLowerCase();
+}
+
+/**
+ * Validate and normalize trial identity tuple.
+ * Returns normalized values so all callers use the same storage key format.
+ */
+function validateTrialIdentity(deviceId, extensionId) {
+  const d = normalizeTrialDeviceId(deviceId);
+  const e = normalizeTrialExtensionId(extensionId);
+  if (!d || !e) return { ok: false, reason: 'missing' };
+  if (d.length > MAX_TRIAL_ID_LEN || e.length > MAX_TRIAL_ID_LEN) {
+    return { ok: false, reason: 'too_long' };
+  }
+  if (!SAFE_TRIAL_ID_RE.test(d) || !SAFE_TRIAL_ID_RE.test(e)) {
+    return { ok: false, reason: 'bad_chars' };
+  }
+  return { ok: true, deviceId: d, extensionId: e };
+}
+
 function compositeKey(deviceId, extensionId) {
-  const d = String(deviceId || '').trim().slice(0, 200);
-  const e = String(extensionId || '').trim().slice(0, 200);
-  return `${d}|${e}`;
+  const check = validateTrialIdentity(deviceId, extensionId);
+  if (!check.ok) {
+    const err = new Error('bad_trial_identity');
+    err.code = check.reason;
+    throw err;
+  }
+  return `${check.deviceId}|${check.extensionId}`;
 }
 
 /** @returns {'file'|'blob'|'memory'} */
@@ -173,6 +204,7 @@ function consumeTrial(deviceId, extensionId, jwtRemaining) {
 
 module.exports = {
   compositeKey,
+  validateTrialIdentity,
   getTrialPersistenceMode,
   ensureTrialRemaining,
   consumeTrial
