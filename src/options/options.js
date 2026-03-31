@@ -220,12 +220,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const text = await res.text();
           if (!res.ok) {
             console.warn('[devlynx-debug] verify response status:', res.status);
-            console.warn('[devlynx-debug] verify response body:', text.slice(0, 800));
           }
           try {
             data = text ? JSON.parse(text) : {};
           } catch (parseErr) {
-            console.warn('[devlynx-debug] verify JSON parse error:', parseErr.message, text.slice(0, 800));
+            console.warn('[devlynx-debug] verify JSON parse error:', parseErr.message);
             data = {};
           }
           okFetch = true;
