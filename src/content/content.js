@@ -35,13 +35,17 @@
   function injectMod(css, js, showFeedback) {
     if (css && typeof css === 'string') {
       // insertCSS (via background) is exempt from the page's CSP — works on Stripe, GitHub, etc.
-      chrome.runtime.sendMessage({ type: 'APPLY_CSS_MOD', css }).catch(() => {});
+      chrome.runtime.sendMessage({ type: 'APPLY_CSS_MOD', css }).catch((err) => {
+        console.error('[DevLynx] mod apply failed:', err);
+      });
     }
     if (js && typeof js === 'string') {
       // Background will try executeScript (MAIN world). If the page CSP blocks eval,
       // it sends SHOW_MOD_STATUS back so we can notify the user. showFeedback=false
       // suppresses the toast on silent page-load restoration.
-      chrome.runtime.sendMessage({ type: 'EXECUTE_MOD_JS', code: js, showFeedback: !!showFeedback }).catch(() => {});
+      chrome.runtime.sendMessage({ type: 'EXECUTE_MOD_JS', code: js, showFeedback: !!showFeedback }).catch((err) => {
+        console.error('[DevLynx] mod apply failed:', err);
+      });
     }
   }
 
@@ -74,6 +78,10 @@
   const hostname = getHostname();
   if (hostname) {
     chrome.storage.local.get([STORAGE_PREFIX + hostname], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('[DevLynx] mod apply failed:', chrome.runtime.lastError);
+        return;
+      }
       const data = result[STORAGE_PREFIX + hostname];
       if (data && (data.css || data.js)) injectMod(data.css, data.js, false);
     });
@@ -182,11 +190,21 @@ const merged = mainErrors.concat(bridgeErrors).concat([...new Set(capturedErrors
       }
       const key = STORAGE_PREFIX + h;
       chrome.storage.local.get([key], (result) => {
+        if (chrome.runtime.lastError) {
+          console.error('[DevLynx] mod apply failed:', chrome.runtime.lastError);
+          sendResponse({ ok: false, error: chrome.runtime.lastError.message || 'Storage read failed' });
+          return;
+        }
         const existing = result[key] || { css: '', js: '' };
         const newCss = (existing.css ? existing.css + '\n' : '') + (css || '');
         const newJs = (existing.js ? existing.js + '\n' : '') + (js || '');
         const payload = { css: newCss, js: newJs };
         chrome.storage.local.set({ [key]: payload }, () => {
+          if (chrome.runtime.lastError) {
+            console.error('[DevLynx] mod apply failed:', chrome.runtime.lastError);
+            sendResponse({ ok: false, error: chrome.runtime.lastError.message || 'Storage failed' });
+            return;
+          }
           injectMod(css || '', js || '', true); // showFeedback=true — user actively applied this mod
           sendResponse({ ok: true });
         });
@@ -520,12 +538,20 @@ ${JSON.stringify(styleObj, null, 2)}
 
   function appendAndSave(key, css, js) {
     chrome.storage.local.get([key], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('[DevLynx] mod apply failed:', chrome.runtime.lastError);
+        return;
+      }
       const existing = result[key] || { css: '', js: '' };
       const payload = {
         css: existing.css + (css || ''),
         js: existing.js + (js || '')
       };
-      chrome.storage.local.set({ [key]: payload });
+      chrome.storage.local.set({ [key]: payload }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('[DevLynx] mod apply failed:', chrome.runtime.lastError);
+        }
+      });
     });
   }
 })();

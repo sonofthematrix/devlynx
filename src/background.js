@@ -73,6 +73,13 @@ const LICENSE_TOKEN_STORAGE_KEY = 'devlynx_license_token';
 const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const DEVICE_ID_STORAGE_KEY = 'devlynx_device_id';
 
+/** Local dev unlock — no server/JWT; same string across DevLynx extensions. */
+const DEVLYNX_DEV_UNLOCK_KEY = 'DEVLYNX-DEV-2025';
+
+function isDevUnlockLicenseKey(raw) {
+  return (raw && String(raw).trim()) === DEVLYNX_DEV_UNLOCK_KEY;
+}
+
 /** Verify URL: `__DEVLYNX_API_BASE__` + `/verify-license` (default hosted feed; or localhost with `build:local-feed`). */
 
 /** Re-verify Pro with server at most every 6h; network failures use this window for grace access. */
@@ -255,6 +262,7 @@ async function silentProLicenseRefresh() {
     const hasToken = !!token;
     if (!planPro && !hasToken) return;
     if (!licenseKey) return;
+    if (isDevUnlockLicenseKey(licenseKey)) return;
 
     const post = await postVerifyLicenseWithTimeout({
       license_key: licenseKey,
@@ -428,12 +436,30 @@ async function postTrialConsumeAfterAi() {
 }
 
 async function userShouldSkipTrialDecrement() {
-  const r = await storageGetLocal([PLAN_MIRROR_KEY, PLAN_STORAGE_KEY]);
+  const r = await storageGetLocal([
+    PLAN_MIRROR_KEY,
+    PLAN_STORAGE_KEY,
+    LICENSE_KEY_USER_STORAGE_KEY,
+    LICENSE_KEY_STORAGE_KEY
+  ]);
   if (r[PLAN_MIRROR_KEY] === 'pro' || r[PLAN_STORAGE_KEY] === 'pro') return true;
+  if (
+    isDevUnlockLicenseKey(r[LICENSE_KEY_USER_STORAGE_KEY]) ||
+    isDevUnlockLicenseKey(r[LICENSE_KEY_STORAGE_KEY])
+  ) {
+    return true;
+  }
   return isProEntitledFromToken();
 }
 
 async function isProEntitledFromToken() {
+  const rKeys = await storageGetLocal([LICENSE_KEY_USER_STORAGE_KEY, LICENSE_KEY_STORAGE_KEY]);
+  if (
+    isDevUnlockLicenseKey(rKeys[LICENSE_KEY_USER_STORAGE_KEY]) ||
+    isDevUnlockLicenseKey(rKeys[LICENSE_KEY_STORAGE_KEY])
+  ) {
+    return true;
+  }
   const deviceId = await getOrCreateDeviceIdBg();
   const r = await storageGetLocal([LICENSE_TOKEN_STORAGE_KEY]);
   const token = (r[LICENSE_TOKEN_STORAGE_KEY] && String(r[LICENSE_TOKEN_STORAGE_KEY]).trim()) || '';
@@ -459,11 +485,13 @@ async function assertAiEntitled() {
     LICENSE_KEY_STORAGE_KEY
   ]);
 
-  const planPro = r0[PLAN_MIRROR_KEY] === 'pro' || r0[PLAN_STORAGE_KEY] === 'pro';
   let licenseKey =
     (r0[LICENSE_KEY_USER_STORAGE_KEY] && String(r0[LICENSE_KEY_USER_STORAGE_KEY]).trim()) ||
     (r0[LICENSE_KEY_STORAGE_KEY] && String(r0[LICENSE_KEY_STORAGE_KEY]).trim()) ||
     '';
+  if (isDevUnlockLicenseKey(licenseKey)) return null;
+
+  const planPro = r0[PLAN_MIRROR_KEY] === 'pro' || r0[PLAN_STORAGE_KEY] === 'pro';
 
   let jwtPro = false;
   let jwtLicenseKey = '';
@@ -1151,9 +1179,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       PLAN_MIRROR_KEY,
       PLAN_STORAGE_KEY,
       LICENSE_TOKEN_STORAGE_KEY,
-      TRIAL_JWT_STORAGE_KEY
+      TRIAL_JWT_STORAGE_KEY,
+      LICENSE_KEY_USER_STORAGE_KEY,
+      LICENSE_KEY_STORAGE_KEY
     ]);
     if (r[PLAN_MIRROR_KEY] === 'pro' || r[PLAN_STORAGE_KEY] === 'pro') return { allow: true };
+    const ctxKey =
+      (r[LICENSE_KEY_USER_STORAGE_KEY] && String(r[LICENSE_KEY_USER_STORAGE_KEY]).trim()) ||
+      (r[LICENSE_KEY_STORAGE_KEY] && String(r[LICENSE_KEY_STORAGE_KEY]).trim()) ||
+      '';
+    if (isDevUnlockLicenseKey(ctxKey)) return { allow: true };
     const licTok = r[LICENSE_TOKEN_STORAGE_KEY] && String(r[LICENSE_TOKEN_STORAGE_KEY]).trim();
     if (licTok && (await isProEntitledFromToken())) return { allow: true };
     const deviceId = await getOrCreateDeviceIdBg();

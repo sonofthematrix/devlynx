@@ -9,7 +9,7 @@ const LICENSE_TOKEN_STORAGE_KEY = 'devlynx_license_token';
 const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const DEVICE_ID_STORAGE_KEY = 'devlynx_device_id';
 /** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
-const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app/api';
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://api.devlynx.dev/api';
 /** Replaced at build; placeholder → hosted Vercel feed API by default. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
@@ -49,6 +49,9 @@ function serverOfflineMsg() {
 }
 
 const LICENSE_DEVICE_CAP = 3;
+
+/** Local dev unlock — no server/JWT; same string across DevLynx extensions. */
+const DEVLYNX_DEV_UNLOCK_KEY = 'DEVLYNX-DEV-2025';
 
 function optionsVerifyErrorMessage(data) {
   const d = data || {};
@@ -121,18 +124,29 @@ function getOrCreateDeviceId() {
 
 function resolvePlanFromToken() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([LICENSE_TOKEN_STORAGE_KEY], (r) => {
-      const token =
-        (r && r[LICENSE_TOKEN_STORAGE_KEY] && String(r[LICENSE_TOKEN_STORAGE_KEY]).trim()) || '';
-      if (!token || typeof devlynxValidateLicenseToken !== 'function') {
-        resolve('free');
-        return;
+    chrome.storage.local.get(
+      [LICENSE_TOKEN_STORAGE_KEY, LICENSE_KEY_USER_STORAGE_KEY, LICENSE_KEY_STORAGE_KEY],
+      (r) => {
+        const userK =
+          (r && r[LICENSE_KEY_USER_STORAGE_KEY] && String(r[LICENSE_KEY_USER_STORAGE_KEY]).trim()) || '';
+        const lensK =
+          (r && r[LICENSE_KEY_STORAGE_KEY] && String(r[LICENSE_KEY_STORAGE_KEY]).trim()) || '';
+        if (userK === DEVLYNX_DEV_UNLOCK_KEY || lensK === DEVLYNX_DEV_UNLOCK_KEY) {
+          resolve('pro');
+          return;
+        }
+        const token =
+          (r && r[LICENSE_TOKEN_STORAGE_KEY] && String(r[LICENSE_TOKEN_STORAGE_KEY]).trim()) || '';
+        if (!token || typeof devlynxValidateLicenseToken !== 'function') {
+          resolve('free');
+          return;
+        }
+        getOrCreateDeviceId()
+          .then((deviceId) => devlynxValidateLicenseToken(token, chrome.runtime.id, deviceId))
+          .then((v) => resolve(v.ok ? 'pro' : 'free'))
+          .catch(() => resolve('free'));
       }
-      getOrCreateDeviceId()
-        .then((deviceId) => devlynxValidateLicenseToken(token, chrome.runtime.id, deviceId))
-        .then((v) => resolve(v.ok ? 'pro' : 'free'))
-        .catch(() => resolve('free'));
-    });
+    );
   });
 }
 
@@ -189,6 +203,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const key = (input && input.value && input.value.trim()) || '';
     if (!key) {
       setLicenseStatus('Please enter a license key.', 'error');
+      return;
+    }
+
+    if (key === DEVLYNX_DEV_UNLOCK_KEY) {
+      chrome.storage.local.remove([LICENSE_TOKEN_STORAGE_KEY], () => {
+        chrome.storage.local.set(
+          {
+            [PLAN_STORAGE_KEY]: 'pro',
+            [PLAN_MIRROR_KEY]: 'pro',
+            [LICENSE_KEY_USER_STORAGE_KEY]: key,
+            [LICENSE_KEY_STORAGE_KEY]: key,
+            [LICENSE_VERIFIED_AT_KEY]: Date.now(),
+            [LICENSE_STATUS_CHECKED_AT_KEY]: Date.now()
+          },
+          () => {
+            updatePlanDisplay('pro');
+            const upgradeHint = document.getElementById('options-upgrade-link');
+            if (upgradeHint) upgradeHint.style.display = 'none';
+            setLicenseStatus('Dev unlock accepted. Pro features enabled.', 'success');
+            setStatus('Dev unlock accepted.', 'success');
+          }
+        );
+      });
       return;
     }
 
