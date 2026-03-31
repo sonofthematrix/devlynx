@@ -26,7 +26,7 @@ Source of truth for website copy, Gumroad listings, and product direction.
 | DevLynx SEO | Coming soon | $19 one-time | `devlynx-seo` |
 | DevLynx Fill | Coming soon | $29 one-time | `devlynx-fill` |
 | DevLynx Ship | Coming soon | $19 one-time | `devlynx-ship` |
-| DevLynx Bundle | When all 4 live | $59 (save $27) | `devlynx-bundle` |
+| DevLynx Bundle | When all 4 live | TBD — announced at launch | `devlynx-bundle` |
 
 All sold via `store.devlynx.dev` (CNAME → Gumroad).
 
@@ -34,50 +34,82 @@ All sold via `store.devlynx.dev` (CNAME → Gumroad).
 
 ## DevLynx AI — Gumroad copy
 
-**Title:** DevLynx AI: Explain, Debug & Modify Websites
+**Title:**
+```
+DevLynx AI: Explain, Debug & Modify Websites
+```
 
-**Tagline:** AI developer toolkit in your browser sidebar. Explain elements, debug errors, modify pages, test APIs — on any website.
+**Tagline:**
+```
+AI developer toolkit in your browser sidebar. Explain elements, debug errors, modify pages, test APIs — on any website.
+```
 
-**Short description (Gumroad summary):**
+**Description (body):**
+
+```
 DevLynx AI lives in your browser's side panel. Click any element for an AI explanation, paste a stack trace for fix hints, generate CSS/JS mods, or run an HTTP API tester — all without leaving the tab.
 
-Free includes core tools + 20 AI trial uses. Pro ($19 one-time) unlocks unlimited AI for Explain Element, Error Explainer, and Mod Generator. Lifetime updates. BYOK OpenAI.
-
-**What's included:**
-- AI Explain Element — click any element, get a clear explanation
-- Error Explainer — paste errors, get AI fix hints
-- AI Dev Assistant — ask anything about JS, CSS, browser APIs
-- AI Mod Generator — describe a change, get CSS/JS for the page
-- API Tester (CORS-free) — GET/POST/PUT/DELETE from the panel
-- Screenshot capture from the panel
-- Context menu shortcuts on any page
-
-**Pricing:**
-- Free: core tools + 20 shared AI trial uses
-- Pro — $19 one-time: unlimited AI features, lifetime updates
-
-⚠️ Early adopter price: $19. Going up to $29 when Phase 2 ships.
+Free includes core tools + 20 AI trial uses. Pro ($19 one-time) unlocks unlimited AI. Lifetime updates. BYOK OpenAI.
 
 ---
 
-🚀 Coming soon — the DevLynx suite
+WHAT'S INCLUDED
 
-DevLynx AI is the first of four extensions. More tools shipping in Q2 2026:
+✦ AI Explain Element — click any element, get a clear explanation
+✦ Error Explainer — paste errors, get AI fix hints
+✦ AI Dev Assistant — ask anything about JS, CSS, browser APIs
+✦ AI Mod Generator — describe a change, get CSS/JS for the page
+✦ API Tester (CORS-free) — GET/POST/PUT/DELETE from the panel
+✦ Screenshot capture from the panel
+✦ Context menu shortcuts on any page
 
-- DevLynx SEO ($19) — instant SEO audit, meta/heading/alt-text analysis, page score
-- DevLynx Fill ($29) — AI product filler for e-commerce: titles, descriptions, meta
-- DevLynx Ship ($19) — Chrome/Edge/Opera store submission autopilot
+---
 
-Bundle deal coming soon: all 4 extensions for $59.
+PRICING
 
-🎁 Bought DevLynx AI? You get $19 credit toward the bundle — so you pay just $40.
-That's $56 off the future full price. The earlier you buy, the more you save.
+Free — core tools + 20 shared AI trial uses
+Pro — $19 one-time: unlimited AI, lifetime updates
 
-**FAQ:**
-- *Do I need an API key?* Yes — add your OpenAI key in the panel (BYOK). Your key stays local in your browser.
-- *Does the price go up?* Yes. $19 is the early adopter price. Going up to $29 when Phase 2 ships.
-- *What counts as "unlimited"?* No per-use cap on Pro AI features. Standard OpenAI rate limits and your own usage costs still apply (BYOK).
-- *Bundle credit — how does it work?* Buying DevLynx AI now locks in $19 credit toward the bundle. When the bundle launches at $59, you pay $40.
+⚠️ Early adopter price: $19 — going up to $29 when Phase 2 ships.
+
+---
+
+HOW IT WORKS
+
+Requires your own OpenAI API key (BYOK). Add it once in the panel — your key stays local in your browser. AI usage is billed directly to your OpenAI account at standard rates.
+
+---
+
+FAQ
+
+Do I need an API key?
+Yes — add your OpenAI key in the panel. It stays local, never sent to our servers.
+
+Does the price go up?
+Yes. $19 is the early adopter price. Going up to $29 when Phase 2 ships.
+
+What counts as "unlimited"?
+No per-use cap on Pro AI features. Standard OpenAI rate limits and your own usage costs still apply.
+
+What's in Phase 2?
+Performance audit, security scanner, code generation with page context, saved prompts, export debug sessions to Markdown.
+
+---
+
+🚀 MORE TOOLS COMING IN Q2 2026
+
+DevLynx AI is the first of four extensions:
+
+→ DevLynx SEO ($19) — instant SEO audit, meta/heading/alt-text analysis, page score
+→ DevLynx Fill ($29) — AI product filler for e-commerce: titles, descriptions, meta
+→ DevLynx Ship ($19) — Chrome/Edge/Opera store submission autopilot
+
+Bundle coming soon — all 4 extensions, one license. Price announced at launch.
+```
+
+**Price:** $19
+**License keys:** on — limit 3 devices per key (90-day rolling window)
+**Support email:** support@devlynx.dev
 
 ---
 
@@ -104,8 +136,8 @@ That's $56 off the future full price. The earlier you buy, the more you save.
 - Team sessions (needs backend + auth)
 
 ### Bundle
-- All 4 extensions, one license — $59 (save $27 vs buying separately)
-- Available when all 4 are live
+- All 4 extensions, one license
+- Price announced when all 4 are live
 
 ---
 
@@ -126,7 +158,7 @@ What's coming
 ### CTA copy
 - Primary: "Get Pro — $19" (DevLynx AI)
 - Secondary: "Notify me" (coming soon products)
-- Bundle: "Save $27 with the bundle — coming soon"
+- Bundle: "Coming soon — price announced at launch"
 
 ---
 

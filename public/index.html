@@ -153,6 +153,92 @@
     .earlybird p { margin: 0; font-size: 14px; color: #94a3b8; }
     .earlybird strong { color: #eab308; }
 
+    /* Marquee */
+    .marquee-wrap {
+      overflow: hidden;
+      margin-bottom: 64px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 14px 0;
+      position: relative;
+    }
+    .marquee-wrap::before, .marquee-wrap::after {
+      content: ''; position: absolute; top: 0; width: 80px; height: 100%; z-index: 2;
+    }
+    .marquee-wrap::before { left: 0; background: linear-gradient(to right, #090b14, transparent); }
+    .marquee-wrap::after  { right: 0; background: linear-gradient(to left,  #090b14, transparent); }
+    .marquee-track {
+      display: flex; gap: 0; white-space: nowrap;
+      animation: marquee 28s linear infinite;
+    }
+    .marquee-track:hover { animation-play-state: paused; }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .marquee-item {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 0 32px; font-size: 13px; font-weight: 600; color: #64748b; letter-spacing: 0.03em;
+    }
+    .marquee-item span { color: #94a3b8; }
+    .marquee-dot {
+      width: 4px; height: 4px; border-radius: 50%; background: #334155; flex-shrink: 0;
+    }
+    .marquee-item.gold span  { color: #eab308; }
+    .marquee-item.blue span  { color: #38bdf8; }
+    .marquee-item.green span { color: #34d399; }
+    .marquee-item.purple span{ color: #a78bfa; }
+
+    /* Promo tile */
+    .promo-tile {
+      background: linear-gradient(135deg, #0d1120 0%, #080b16 60%, #0a0d1a 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 48px 40px;
+      margin-bottom: 64px;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .promo-tile::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 15% 50%, rgba(234,179,8,0.06) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 60% at 85% 50%, rgba(167,139,250,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .promo-logo {
+      width: 96px; height: 96px; flex-shrink: 0;
+      filter: drop-shadow(0 0 20px rgba(234,179,8,0.35)) drop-shadow(0 0 40px rgba(167,139,250,0.2));
+    }
+    .promo-content { flex: 1; position: relative; }
+    .promo-content h2 {
+      margin: 0 0 10px; font-size: 26px; font-weight: 800; color: #f8fafc; letter-spacing: -0.5px;
+    }
+    .promo-content p { margin: 0 0 20px; font-size: 15px; color: #94a3b8; max-width: 480px; line-height: 1.6; }
+    .promo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .promo-tag {
+      font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+      border: 1px solid; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .promo-tag.gold   { color: #eab308; border-color: rgba(234,179,8,0.3); background: rgba(234,179,8,0.06); }
+    .promo-tag.blue   { color: #38bdf8; border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.06); }
+    .promo-tag.green  { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
+    .promo-tag.purple { color: #a78bfa; border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.06); }
+    .promo-cta {
+      display: inline-block; padding: 12px 28px;
+      background: linear-gradient(90deg, #f59e0b, #eab308);
+      color: #000; font-weight: 700; border-radius: 10px;
+      text-decoration: none; font-size: 14px;
+      box-shadow: 0 0 24px rgba(234,179,8,0.25);
+      transition: opacity 0.15s, box-shadow 0.15s;
+    }
+    .promo-cta:hover { opacity: 0.9; box-shadow: 0 0 36px rgba(234,179,8,0.35); }
+    .promo-price-note { display: inline-block; margin-left: 16px; font-size: 12px; color: #64748b; vertical-align: middle; }
+    @media (max-width: 640px) {
+      .promo-tile { flex-direction: column; gap: 24px; padding: 32px 24px; }
+      .promo-logo { width: 72px; height: 72px; }
+    }
+
     footer {
       text-align: center; padding: 32px 24px;
       color: #64748b; font-size: 13px;
@@ -209,6 +295,44 @@
       <p style="margin: 10px auto 0; font-size: 13px; color: #64748b;">One-time payment &nbsp;·&nbsp; Lifetime updates &nbsp;·&nbsp; Early adopter pricing</p>
     </header>
 
+    <!-- Marquee -->
+    <div class="marquee-wrap">
+      <div class="marquee-track">
+        <!-- set 1 -->
+        <div class="marquee-item gold"><span>DevLynx AI</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">AI Explain Element<div class="marquee-dot"></div></div>
+        <div class="marquee-item">Error Explainer<div class="marquee-dot"></div></div>
+        <div class="marquee-item blue"><span>DevLynx SEO</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">Instant Page Audit<div class="marquee-dot"></div></div>
+        <div class="marquee-item">Meta &amp; Alt-text Analysis<div class="marquee-dot"></div></div>
+        <div class="marquee-item green"><span>DevLynx Fill</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">AI Product Filler<div class="marquee-dot"></div></div>
+        <div class="marquee-item">E-commerce Titles &amp; Descriptions<div class="marquee-dot"></div></div>
+        <div class="marquee-item purple"><span>DevLynx Ship</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">Store Submission Autopilot<div class="marquee-dot"></div></div>
+        <div class="marquee-item">Chrome · Edge · Opera<div class="marquee-dot"></div></div>
+        <div class="marquee-item gold"><span>One-time payment</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">Lifetime updates<div class="marquee-dot"></div></div>
+        <div class="marquee-item">BYOK OpenAI<div class="marquee-dot"></div></div>
+        <!-- set 2 (duplicate for seamless loop) -->
+        <div class="marquee-item gold"><span>DevLynx AI</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">AI Explain Element<div class="marquee-dot"></div></div>
+        <div class="marquee-item">Error Explainer<div class="marquee-dot"></div></div>
+        <div class="marquee-item blue"><span>DevLynx SEO</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">Instant Page Audit<div class="marquee-dot"></div></div>
+        <div class="marquee-item">Meta &amp; Alt-text Analysis<div class="marquee-dot"></div></div>
+        <div class="marquee-item green"><span>DevLynx Fill</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">AI Product Filler<div class="marquee-dot"></div></div>
+        <div class="marquee-item">E-commerce Titles &amp; Descriptions<div class="marquee-dot"></div></div>
+        <div class="marquee-item purple"><span>DevLynx Ship</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">Store Submission Autopilot<div class="marquee-dot"></div></div>
+        <div class="marquee-item">Chrome · Edge · Opera<div class="marquee-dot"></div></div>
+        <div class="marquee-item gold"><span>One-time payment</span><div class="marquee-dot"></div></div>
+        <div class="marquee-item">Lifetime updates<div class="marquee-dot"></div></div>
+        <div class="marquee-item">BYOK OpenAI<div class="marquee-dot"></div></div>
+      </div>
+    </div>
+
     <div class="products">
 
       <!-- DevLynx AI Pro -->
@@ -258,7 +382,7 @@
         </ul>
         <div class="card-footer">
           <div class="price"><sup>$</sup>19 <span style="font-size:13px;color:#64748b;font-weight:400;">Pro</span></div>
-          <div class="price-note">One-time · Lifetime updates · Early adopter price</div>
+          <div class="price-note">One-time · Lifetime updates · <span style="color:#f59e0b;">Going up to $29 when Phase 2 ships</span></div>
           <p style="font-size:12px;color:#64748b;margin:0 0 12px;line-height:1.5;">⚠️ Requires your own <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" style="color:#94a3b8;">OpenAI API key</a> — AI usage is billed directly to your OpenAI account.</p>
           <a href="https://store.devlynx.dev/l/devlynx-ai" class="cta cta-primary" target="_blank" rel="noopener noreferrer">Get Pro — $19</a>
         </div>
@@ -419,18 +543,14 @@
 
     <!-- Early adopter banner -->
     <div class="earlybird">
-      <p><strong>Early adopter pricing</strong> — all products are priced lower now than they will be after launch. One-time payment, lifetime updates. Price goes up as features ship.</p>
+      <p><strong>Early adopter pricing</strong> — DevLynx AI is $19 now. Going up to $29 when Phase 2 ships. One-time payment, lifetime updates.</p>
     </div>
 
     <!-- Bundle -->
     <div class="bundle">
       <h2>DevLynx Bundle</h2>
       <p>All 4 extensions. One license. Everything you need in your browser sidebar.</p>
-      <div>
-        <span class="bundle-price">$59</span>
-        <span class="bundle-was">$86</span>
-      </div>
-      <div class="bundle-note">Save $27 vs buying separately · Coming when all 4 are live</div>
+      <div class="bundle-note">Price announced when all 4 are live</div>
       <span class="bundle-cta">Coming soon</span>
     </div>
 
@@ -459,7 +579,7 @@
             <li>DevLynx SEO — instant page audit</li>
             <li>DevLynx Fill — AI product filler</li>
             <li>DevLynx Ship — store submission autopilot</li>
-            <li>Bundle — all 4 for $59</li>
+            <li>Bundle — all 4, one license</li>
           </ul>
         </div>
 
@@ -475,6 +595,52 @@
           </ul>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Promo tile -->
+    <div class="promo-tile">
+      <svg class="promo-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+        <defs>
+          <linearGradient id="pr-r" x1="64" y1="16" x2="112" y2="106" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stop-color="#facc15"/>
+            <stop offset="100%" stop-color="#38bdf8"/>
+          </linearGradient>
+          <linearGradient id="pr-b" x1="112" y1="106" x2="16" y2="106" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stop-color="#38bdf8"/>
+            <stop offset="100%" stop-color="#34d399"/>
+          </linearGradient>
+          <linearGradient id="pr-l" x1="16" y1="106" x2="64" y2="16" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#facc15"/>
+          </linearGradient>
+          <linearGradient id="pr-eye" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#ffe566"/>
+            <stop offset="100%" stop-color="#d97706"/>
+          </linearGradient>
+          <filter id="pr-glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="pr-glow2"><feGaussianBlur stdDeviation="9" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <line x1="64" y1="16" x2="112" y2="106" stroke="url(#pr-r)" stroke-width="7" stroke-linecap="round" filter="url(#pr-glow)" opacity="0.95"/>
+        <line x1="112" y1="106" x2="16" y2="106" stroke="url(#pr-b)" stroke-width="7" stroke-linecap="round" filter="url(#pr-glow)" opacity="0.95"/>
+        <line x1="16" y1="106" x2="64" y2="16" stroke="url(#pr-l)" stroke-width="7" stroke-linecap="round" filter="url(#pr-glow)" opacity="0.95"/>
+        <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="none" stroke="url(#pr-eye)" stroke-width="2.5" opacity="0.85"/>
+        <circle cx="64" cy="70" r="14" fill="url(#pr-eye)" filter="url(#pr-glow2)" opacity="0.4"/>
+        <circle cx="64" cy="70" r="12" fill="url(#pr-eye)"/>
+        <ellipse cx="64" cy="70" rx="3.5" ry="10" fill="#04040a"/>
+        <ellipse cx="68" cy="65" rx="2.5" ry="3.5" fill="#fff" opacity="0.75"/>
+      </svg>
+      <div class="promo-content">
+        <h2>DevLynx — Early Adopter Deal</h2>
+        <p>Four browser extensions for developers. AI debugging, SEO audits, product filling, and store submissions — all from your sidebar. One-time payment, lifetime updates.</p>
+        <div class="promo-tags">
+          <span class="promo-tag gold">DevLynx AI — $19</span>
+          <span class="promo-tag blue">SEO — Coming soon</span>
+          <span class="promo-tag green">Fill — Coming soon</span>
+          <span class="promo-tag purple">Ship — Coming soon</span>
+        </div>
+        <a href="https://store.devlynx.dev/l/devlynx-ai" class="promo-cta" target="_blank" rel="noopener noreferrer">Get DevLynx AI — $19</a>
+        <span class="promo-price-note">Going up to $29 when Phase 2 ships</span>
       </div>
     </div>
 
