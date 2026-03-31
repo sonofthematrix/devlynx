@@ -52,14 +52,32 @@ Free includes core tools + 20 AI trial uses. Pro ($19 one-time) unlocks unlimite
 - Screenshot capture from the panel
 - Context menu shortcuts on any page
 
-**Pricing block:**
+**Pricing:**
 - Free: core tools + 20 shared AI trial uses
-- Pro — $19 one-time: unlimited AI features, lifetime updates, early adopter price
+- Pro — $19 one-time: unlimited AI features, lifetime updates
+
+⚠️ Early adopter price: $19. Going up to $29 when Phase 2 ships.
+
+---
+
+🚀 Coming soon — the DevLynx suite
+
+DevLynx AI is the first of four extensions. More tools shipping in Q2 2026:
+
+- DevLynx SEO ($19) — instant SEO audit, meta/heading/alt-text analysis, page score
+- DevLynx Fill ($29) — AI product filler for e-commerce: titles, descriptions, meta
+- DevLynx Ship ($19) — Chrome/Edge/Opera store submission autopilot
+
+Bundle deal coming soon: all 4 extensions for $59.
+
+🎁 Bought DevLynx AI? You get $19 credit toward the bundle — so you pay just $40.
+That's $56 off the future full price. The earlier you buy, the more you save.
 
 **FAQ:**
 - *Do I need an API key?* Yes — add your OpenAI key in the panel (BYOK). Your key stays local in your browser.
-- *Does the price go up?* Yes. $19 is the early adopter price. It will increase as Phase 2 features ship.
+- *Does the price go up?* Yes. $19 is the early adopter price. Going up to $29 when Phase 2 ships.
 - *What counts as "unlimited"?* No per-use cap on Pro AI features. Standard OpenAI rate limits and your own usage costs still apply (BYOK).
+- *Bundle credit — how does it work?* Buying DevLynx AI now locks in $19 credit toward the bundle. When the bundle launches at $59, you pay $40.
 
 ---
 
