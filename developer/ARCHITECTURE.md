@@ -42,6 +42,8 @@ devlens-saas/
 ├── assets/                       # Store mockups, screenshots for docs
 ├── release/                      # devlens-extension.zip for store upload
 ├── package.json                  # Root: build scripts, devDependencies (obfuscator, archiver)
+├── Dockerfile                    # Optional Docker image: copies feed-server/ only (no duplicate server file at repo root)
+├── docker-run.bat                # Windows: docker build from root → same binary as feed-server/npm start
 └── README.md
 ```
 

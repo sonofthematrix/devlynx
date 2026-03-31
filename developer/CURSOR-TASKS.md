@@ -79,6 +79,51 @@ Always edit `src/` only — never `dist/`. Rebuild with `npm run build:dev` to t
 
 ---
 
+---
+
+## 9. Replace emoji action buttons with SVG icons (panel.html + panel.css)
+
+**Files:** `src/sidepanel/panel.html`, `src/sidepanel/panel.css`
+**Problem:** The copy (📋), clear (🗑️) and expand (⬆️) buttons in every answer block use emoji which render inconsistently across OS and look unprofessional.
+**Fix:**
+- Replace every `<span class="answer-btn-emoji" aria-hidden="true">📋</span>` with an inline SVG clipboard icon
+- Replace every `<span class="answer-btn-emoji" aria-hidden="true">🗑️</span>` with an inline SVG trash icon
+- Replace every `<span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span>` with an inline SVG chevron-up icon
+- Replace the `<span class="btn-inline-icon">📋</span>` in the Get Errors button with the same clipboard SVG
+- Use `stroke="currentColor"` so icons inherit button color automatically
+- When the answer block is expanded, flip the chevron-up to chevron-down (add `.expanded` class toggle in panel.js where expand is already handled)
+- Remove `.answer-btn-emoji` font-size rules from CSS, add `display: flex; align-items: center; justify-content: center;` to `.btn-icon` if not already present
+
+---
+
+## 10. Compact header (panel.html + panel.css)
+
+**Files:** `src/sidepanel/panel.html`, `src/sidepanel/panel.css`
+**Problem:** The header stacks 6 elements vertically (title, version, tagline, connection status, disconnect hint, status bar) — too much vertical space wasted at the top.
+**Fix:**
+- Wrap `<h1>` and `<p class="header-version">` in a `<div class="header-title-row">` and display them on one line (flexbox, `align-items: baseline`, `gap: 8px`)
+- Remove the `<p class="tagline">` element entirely — it duplicates the store description and adds no value in the sidebar
+- Add `.header-title-row { display: flex; align-items: baseline; gap: 8px; }` to CSS
+- Remove `.tagline` CSS rule
+
+---
+
+## 11. Shorten long hint texts (panel.html)
+
+**File:** `src/sidepanel/panel.html`
+**Problem:** The Error Explainer hint is 3 sentences of edge-case warnings that users skip.
+**Fix:** Replace the Error Explainer hint with: `Paste a stack trace below, or use <strong>Get Errors</strong> to capture page errors. Reload the page first if errors are missing. Payment iframes (e.g. Stripe) cannot be captured.`
+
+---
+
+## 12. Dev unlock key (options.js + panel.js)
+
+**Files:** `src/options/options.js`, `src/sidepanel/panel.js`
+**Problem:** No way to test Pro features during development without a real Gumroad license key.
+**Fix:** Accept hardcoded dev key `DEVLYNX-DEV-2025` as valid — grants Pro access without any server/JWT call. Check runs before Gumroad validation. No UI change needed.
+
+---
+
 ## Done criteria
 
 - `npm run build:dev` completes without errors
@@ -86,3 +131,6 @@ Always edit `src/` only — never `dist/`. Rebuild with `npm run build:dev` to t
 - License verify: paste key → no auto-verify; click button → verify starts; cancel button visible and works
 - API tester: disabled buttons show tooltip on hover
 - No API key content in console output
+- Answer block buttons show SVG icons (no emoji)
+- Header shows title + version on one line, no tagline
+- Error Explainer hint is max 2 lines
