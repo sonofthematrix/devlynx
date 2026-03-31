@@ -125,6 +125,31 @@
       text-decoration: none; font-size: 15px; opacity: 0.4; cursor: default;
     }
 
+    /* Roadmap */
+    .roadmap { margin-bottom: 64px; }
+    .roadmap h2 { color: #f8fafc; font-size: 22px; font-weight: 800; margin: 0 0 24px; text-align: center; }
+    .roadmap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 700px) { .roadmap-grid { grid-template-columns: 1fr; } }
+    .roadmap-col { background: linear-gradient(160deg, #0f1221 0%, #090c17 100%); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 22px 20px; }
+    .roadmap-col h3 { margin: 0 0 4px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
+    .roadmap-col .phase-label { font-size: 15px; font-weight: 700; color: #f8fafc; margin: 0 0 14px; }
+    .roadmap-col ul { list-style: none; margin: 0; padding: 0; }
+    .roadmap-col ul li { font-size: 13px; color: #94a3b8; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .roadmap-col ul li:last-child { border-bottom: none; }
+    .roadmap-col ul li::before { content: '→ '; color: #475569; }
+    .roadmap-col.now { border-color: rgba(250,204,21,0.25); }
+    .roadmap-col.now h3 { color: #eab308; }
+    .roadmap-col.now ul li::before { content: '✓ '; color: #22c55e; }
+
+    /* Early adopter banner */
+    .earlybird {
+      text-align: center; margin-bottom: 48px;
+      background: linear-gradient(90deg, rgba(234,179,8,0.08), rgba(234,179,8,0.04));
+      border: 1px solid rgba(234,179,8,0.18); border-radius: 12px; padding: 18px 24px;
+    }
+    .earlybird p { margin: 0; font-size: 14px; color: #94a3b8; }
+    .earlybird strong { color: #eab308; }
+
     footer {
       text-align: center; padding: 32px 24px;
       color: #64748b; font-size: 13px;
@@ -167,7 +192,8 @@
         <ellipse cx="68" cy="65" rx="2.5" ry="3.5" fill="#fef9c3" opacity="0.75"/>
       </svg>
       <h1>DevLynx</h1>
-      <p>Browser extensions that make your dev workflow faster — AI debugging, SEO, product filling, and store submissions from your sidebar.</p>
+      <p>Browser extensions that make your dev workflow faster — AI debugging, SEO audits, product filling, and store submissions from your sidebar.</p>
+      <p style="margin: 10px auto 0; font-size: 13px; color: #64748b;">One-time payment &nbsp;·&nbsp; Lifetime updates &nbsp;·&nbsp; Early adopter pricing</p>
     </header>
 
     <div class="products">
@@ -321,6 +347,11 @@
 
     </div>
 
+    <!-- Early adopter banner -->
+    <div class="earlybird">
+      <p><strong>Early adopter pricing</strong> — all products are priced lower now than they will be after launch. One-time payment, lifetime updates. Price goes up as features ship.</p>
+    </div>
+
     <!-- Bundle -->
     <div class="bundle">
       <h2>DevLynx Bundle</h2>
@@ -331,6 +362,50 @@
       </div>
       <div class="bundle-note">Save $27 vs buying separately · Coming when all 4 are live</div>
       <span class="bundle-cta">Coming soon</span>
+    </div>
+
+    <!-- Roadmap -->
+    <div class="roadmap">
+      <h2>What's coming</h2>
+      <div class="roadmap-grid">
+
+        <div class="roadmap-col now">
+          <h3>Live now</h3>
+          <p class="phase-label">DevLynx AI</p>
+          <ul>
+            <li>AI Explain Element</li>
+            <li>Error Explainer</li>
+            <li>AI Dev Assistant</li>
+            <li>Mod Generator (CSS/JS)</li>
+            <li>API Tester (CORS-free)</li>
+            <li>Screenshot capture</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-col">
+          <h3>Coming soon</h3>
+          <p class="phase-label">Full suite</p>
+          <ul>
+            <li>DevLynx SEO — instant page audit</li>
+            <li>DevLynx Fill — AI product filler</li>
+            <li>DevLynx Ship — store submission autopilot</li>
+            <li>Bundle — all 4 for $59</li>
+          </ul>
+        </div>
+
+        <div class="roadmap-col">
+          <h3>Phase 2 — DevLynx AI</h3>
+          <p class="phase-label">3–6 months</p>
+          <ul>
+            <li>Performance audit (Core Web Vitals)</li>
+            <li>Security scanner (API key detection)</li>
+            <li>Code gen with page context</li>
+            <li>Saved prompts / custom workflows</li>
+            <li>Export debug sessions to Markdown</li>
+          </ul>
+        </div>
+
+      </div>
     </div>
 
   </div>
