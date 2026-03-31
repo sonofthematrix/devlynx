@@ -201,20 +201,23 @@
       <!-- DevLynx AI Pro -->
       <div class="product-card featured">
         <!-- Icon: AI / neural / lightning -->
-        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-          <rect width="52" height="52" rx="12" fill="#0d0b28"/>
-          <rect width="52" height="52" rx="12" fill="none" stroke="#facc15" stroke-width="1" opacity="0.3"/>
-          <!-- Brain outline -->
-          <path d="M18 28 Q14 26 14 22 Q14 16 20 15 Q21 11 26 11 Q31 11 32 15 Q38 16 38 22 Q38 26 34 28 Q34 34 26 36 Q18 34 18 28 Z"
-                fill="none" stroke="#eab308" stroke-width="2" stroke-linejoin="round"/>
-          <!-- Neural dots -->
-          <circle cx="22" cy="21" r="2" fill="#facc15"/>
-          <circle cx="30" cy="21" r="2" fill="#facc15"/>
-          <circle cx="26" cy="27" r="2" fill="#facc15"/>
-          <!-- Connections -->
-          <line x1="22" y1="21" x2="30" y2="21" stroke="#facc15" stroke-width="1" opacity="0.5"/>
-          <line x1="22" y1="21" x2="26" y2="27" stroke="#facc15" stroke-width="1" opacity="0.5"/>
-          <line x1="30" y1="21" x2="26" y2="27" stroke="#facc15" stroke-width="1" opacity="0.5"/>
+        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+          <defs>
+            <radialGradient id="bg-ai" cx="42%" cy="38%" r="65%"><stop offset="0%" stop-color="#1a1050"/><stop offset="60%" stop-color="#0d0b28"/><stop offset="100%" stop-color="#06060f"/></radialGradient>
+            <linearGradient id="c-ai" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffe566"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+            <linearGradient id="c2-ai" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="100%" stop-color="#facc15"/></linearGradient>
+            <filter id="glow-ai"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="glow2-ai"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <rect width="128" height="128" rx="22" fill="url(#bg-ai)"/>
+          <rect width="128" height="128" rx="22" fill="none" stroke="#facc15" stroke-width="2" opacity="0.3"/>
+          <path d="M64 16 L112 106 L16 106 Z" fill="none" stroke="url(#c-ai)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow-ai)" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="#07070f" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="none" stroke="url(#c2-ai)" stroke-width="2.5" opacity="0.85"/>
+          <circle cx="64" cy="70" r="14" fill="url(#c-ai)" filter="url(#glow2-ai)" opacity="0.45"/>
+          <circle cx="64" cy="70" r="12" fill="url(#c-ai)"/>
+          <ellipse cx="64" cy="70" rx="3.5" ry="10" fill="#05050d"/>
+          <ellipse cx="68" cy="65" rx="2.5" ry="3.5" fill="#fef9c3" opacity="0.8"/>
         </svg>
         <div class="card-top">
           <h2>DevLynx AI</h2>
@@ -241,16 +244,23 @@
       <!-- DevLynx SEO -->
       <div class="product-card coming-soon accent-blue">
         <!-- Icon: magnifying glass + chart -->
-        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-          <rect width="52" height="52" rx="12" fill="#0d0b28"/>
-          <rect width="52" height="52" rx="12" fill="none" stroke="#facc15" stroke-width="1" opacity="0.2"/>
-          <!-- Bar chart -->
-          <rect x="13" y="28" width="5" height="10" rx="1.5" fill="#38bdf8" opacity="0.5"/>
-          <rect x="21" y="22" width="5" height="16" rx="1.5" fill="#38bdf8" opacity="0.7"/>
-          <rect x="29" y="18" width="5" height="20" rx="1.5" fill="#38bdf8"/>
-          <!-- Magnifying glass -->
-          <circle cx="35" cy="17" r="6" fill="none" stroke="#7dd3fc" stroke-width="2"/>
-          <line x1="39.2" y1="21.2" x2="43" y2="25" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round"/>
+        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+          <defs>
+            <radialGradient id="bg-seo" cx="42%" cy="38%" r="65%"><stop offset="0%" stop-color="#071524"/><stop offset="60%" stop-color="#040e18"/><stop offset="100%" stop-color="#02080f"/></radialGradient>
+            <linearGradient id="c-seo" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7dd3fc"/><stop offset="100%" stop-color="#0ea5e9"/></linearGradient>
+            <linearGradient id="c2-seo" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#7dd3fc"/></linearGradient>
+            <filter id="glow-seo"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="glow2-seo"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <rect width="128" height="128" rx="22" fill="url(#bg-seo)"/>
+          <rect width="128" height="128" rx="22" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.3"/>
+          <path d="M64 16 L112 106 L16 106 Z" fill="none" stroke="url(#c-seo)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow-seo)" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="#020c14" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="none" stroke="url(#c2-seo)" stroke-width="2.5" opacity="0.85"/>
+          <circle cx="64" cy="70" r="14" fill="url(#c-seo)" filter="url(#glow2-seo)" opacity="0.45"/>
+          <circle cx="64" cy="70" r="12" fill="url(#c-seo)"/>
+          <ellipse cx="64" cy="70" rx="3.5" ry="10" fill="#02090f"/>
+          <ellipse cx="68" cy="65" rx="2.5" ry="3.5" fill="#f0f9ff" opacity="0.8"/>
         </svg>
         <div class="card-top">
           <h2>DevLynx SEO</h2>
@@ -275,19 +285,23 @@
       <!-- DevLynx Fill -->
       <div class="product-card coming-soon accent-green">
         <!-- Icon: form / magic fill -->
-        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-          <rect width="52" height="52" rx="12" fill="#0d0b28"/>
-          <rect width="52" height="52" rx="12" fill="none" stroke="#facc15" stroke-width="1" opacity="0.2"/>
-          <!-- Form lines -->
-          <rect x="13" y="14" width="26" height="3" rx="1.5" fill="#34d399" opacity="0.9"/>
-          <rect x="13" y="21" width="18" height="3" rx="1.5" fill="#34d399" opacity="0.6"/>
-          <rect x="13" y="28" width="22" height="3" rx="1.5" fill="#34d399" opacity="0.6"/>
-          <!-- Pen / wand -->
-          <line x1="34" y1="30" x2="42" y2="22" stroke="#6ee7b7" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="34" cy="30" r="2" fill="#6ee7b7"/>
-          <!-- Sparkle -->
-          <circle cx="40" cy="36" r="1.5" fill="#6ee7b7" opacity="0.7"/>
-          <circle cx="44" cy="30" r="1" fill="#6ee7b7" opacity="0.5"/>
+        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+          <defs>
+            <radialGradient id="bg-fill" cx="42%" cy="38%" r="65%"><stop offset="0%" stop-color="#061510"/><stop offset="60%" stop-color="#040e0b"/><stop offset="100%" stop-color="#020805"/></radialGradient>
+            <linearGradient id="c-fill" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6ee7b7"/><stop offset="100%" stop-color="#10b981"/></linearGradient>
+            <linearGradient id="c2-fill" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#d1fae5"/><stop offset="100%" stop-color="#6ee7b7"/></linearGradient>
+            <filter id="glow-fill"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="glow2-fill"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <rect width="128" height="128" rx="22" fill="url(#bg-fill)"/>
+          <rect width="128" height="128" rx="22" fill="none" stroke="#34d399" stroke-width="2" opacity="0.3"/>
+          <path d="M64 16 L112 106 L16 106 Z" fill="none" stroke="url(#c-fill)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow-fill)" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="#020905" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="none" stroke="url(#c2-fill)" stroke-width="2.5" opacity="0.85"/>
+          <circle cx="64" cy="70" r="14" fill="url(#c-fill)" filter="url(#glow2-fill)" opacity="0.45"/>
+          <circle cx="64" cy="70" r="12" fill="url(#c-fill)"/>
+          <ellipse cx="64" cy="70" rx="3.5" ry="10" fill="#020804"/>
+          <ellipse cx="68" cy="65" rx="2.5" ry="3.5" fill="#ecfdf5" opacity="0.8"/>
         </svg>
         <div class="card-top">
           <h2>DevLynx Fill</h2>
@@ -312,19 +326,23 @@
       <!-- DevLynx Ship -->
       <div class="product-card coming-soon accent-purple">
         <!-- Icon: rocket / store submit -->
-        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-          <rect width="52" height="52" rx="12" fill="#0d0b28"/>
-          <rect width="52" height="52" rx="12" fill="none" stroke="#facc15" stroke-width="1" opacity="0.2"/>
-          <!-- Rocket body -->
-          <path d="M26 10 Q32 14 33 22 L33 32 Q29 35 26 42 Q23 35 19 32 L19 22 Q20 14 26 10 Z"
-                fill="none" stroke="#a78bfa" stroke-width="2" stroke-linejoin="round"/>
-          <!-- Window -->
-          <circle cx="26" cy="22" r="4" fill="none" stroke="#c4b5fd" stroke-width="1.5"/>
-          <!-- Fins -->
-          <path d="M19 28 L13 34 L19 32 Z" fill="#a78bfa" opacity="0.6"/>
-          <path d="M33 28 L39 34 L33 32 Z" fill="#a78bfa" opacity="0.6"/>
-          <!-- Flame -->
-          <ellipse cx="26" cy="40" rx="3" ry="4" fill="#7c3aed" opacity="0.8"/>
+        <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+          <defs>
+            <radialGradient id="bg-ship" cx="42%" cy="38%" r="65%"><stop offset="0%" stop-color="#0e0818"/><stop offset="60%" stop-color="#090612"/><stop offset="100%" stop-color="#04030a"/></radialGradient>
+            <linearGradient id="c-ship" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#c4b5fd"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+            <linearGradient id="c2-ship" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ede9fe"/><stop offset="100%" stop-color="#c4b5fd"/></linearGradient>
+            <filter id="glow-ship"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="glow2-ship"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <rect width="128" height="128" rx="22" fill="url(#bg-ship)"/>
+          <rect width="128" height="128" rx="22" fill="none" stroke="#a78bfa" stroke-width="2" opacity="0.3"/>
+          <path d="M64 16 L112 106 L16 106 Z" fill="none" stroke="url(#c-ship)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow-ship)" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="#040209" opacity="0.95"/>
+          <path d="M36 70 Q64 50 92 70 Q64 90 36 70 Z" fill="none" stroke="url(#c2-ship)" stroke-width="2.5" opacity="0.85"/>
+          <circle cx="64" cy="70" r="14" fill="url(#c-ship)" filter="url(#glow2-ship)" opacity="0.45"/>
+          <circle cx="64" cy="70" r="12" fill="url(#c-ship)"/>
+          <ellipse cx="64" cy="70" rx="3.5" ry="10" fill="#030108"/>
+          <ellipse cx="68" cy="65" rx="2.5" ry="3.5" fill="#f5f3ff" opacity="0.8"/>
         </svg>
         <div class="card-top">
           <h2>DevLynx Ship</h2>
