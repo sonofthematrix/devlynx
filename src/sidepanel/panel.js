@@ -1,5 +1,5 @@
 /** Replaced at build; keep in sync with scripts/build.js `HOSTED_FEED_API`. */
-const DEVLYNX_HOSTED_API_DEFAULT = 'https://devlynx-black.vercel.app/api';
+const DEVLYNX_HOSTED_API_DEFAULT = 'https://api.devlynx.dev/api';
 /** Replaced at build; placeholder → hosted API so local/dev loads work without npm start in feed-server. */
 const DEVLYNX_API_BASE = '__DEVLYNX_API_BASE__';
 
@@ -141,14 +141,17 @@ let currentLoadId = 0;
 const FEED_DISCONNECT_POLL_MAX = 30;
 const FEED_DISCONNECT_POLL_MS = 5000;
 let feedDisconnectAutoPollCount = 0;
+/** True when auto-retry stopped after FEED_DISCONNECT_POLL_MAX — details only in status bar tooltips. */
+let feedDisconnectPollPaused = false;
+
+const BACKGROUND_NO_RESPONSE_MSG =
+  'Extension background process did not respond. Try reloading the extension.';
+const API_TESTER_SEND_FIRST_HINT = 'Send a request first to enable code generation';
 
 function resetFeedDisconnectPollBurst() {
   feedDisconnectAutoPollCount = 0;
-  const hintEl = document.getElementById('disconnect-hint');
-  if (hintEl && hintEl.dataset.pollPaused) {
-    delete hintEl.dataset.pollPaused;
-    if (!serverConnected) hintEl.textContent = serverOfflineMsg();
-  }
+  feedDisconnectPollPaused = false;
+  refreshOfflineConnectionTitles();
 }
 
 // Freemium: plan stored in chrome.storage.local; 'free' | 'pro'
@@ -164,6 +167,9 @@ const LICENSE_STATUS_CHECKED_AT_KEY = 'devlynx_license_status_checked_at';
 const LICENSE_CACHE_MS = 6 * 60 * 60 * 1000; // refresh license status after 6h (match background verify cache)
 /** Match server default LICENSE_MAX_ACTIVE_DEVICES */
 const LICENSE_DEVICE_CAP = 3;
+
+/** Local dev unlock — no server/JWT; same string across DevLynx extensions. */
+const DEVLYNX_DEV_UNLOCK_KEY = 'DEVLYNX-DEV-2025';
 
 function panelVerifyErrorMessage(data) {
   const d = data || {};
@@ -217,14 +223,13 @@ const GUMROAD_URL = 'https://sonofthematrix.gumroad.com/l/devlynx-ai';
 const RATE_PROMPT_USES_KEY = 'devlynx_successful_ai_uses';
 const RATE_PROMPT_DISMISSED_KEY = 'devlynx_chrome_store_rate_dismissed';
 const RATE_PROMPT_THRESHOLD = 10;
-/** Replace with your listing ID from the Chrome Web Store URL after publish (then review link works). */
-const CHROME_WEB_STORE_EXTENSION_ID = 'REPLACE_WITH_EXTENSION_ID';
 
 function getChromeStoreReviewUrl() {
-  if (!CHROME_WEB_STORE_EXTENSION_ID || CHROME_WEB_STORE_EXTENSION_ID === 'REPLACE_WITH_EXTENSION_ID') {
-    return 'https://chromewebstore.google.com/search/DevLynx%20AI';
+  const id = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id ? chrome.runtime.id : '';
+  if (id) {
+    return `https://chromewebstore.google.com/detail/${id}`;
   }
-  return `https://chromewebstore.google.com/detail/devlynx-ai/${CHROME_WEB_STORE_EXTENSION_ID}/reviews`;
+  return 'https://chromewebstore.google.com/search/DevLynx%20AI';
 }
 
 function openChromeStoreReview() {
@@ -252,6 +257,26 @@ function updateRatePromptUI() {
 
 function ref(id) {
   return document.getElementById(id);
+}
+
+function hostLabelFromUrl(url) {
+  try {
+    return new URL(String(url || '')).hostname || 'this page';
+  } catch (_) {
+    return 'this page';
+  }
+}
+
+function confirmJsModExecution(pageUrl) {
+  const host = hostLabelFromUrl(pageUrl);
+  return window.confirm(
+    'Security warning: this AI mod contains JavaScript.\n\n' +
+      'JavaScript mods run in the page context on ' +
+      host +
+      ' and can read or modify visible page data.\n\n' +
+      'Only continue on sites you trust.\n\n' +
+      'Press OK to apply this JS mod, or Cancel to skip.'
+  );
 }
 
 function getLicenseKey() {
@@ -290,7 +315,7 @@ function apiPost(body) {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({ type: 'OPENAI_AI', body }, (response) => {
         if (chrome.runtime.lastError) resolve({ error: chrome.runtime.lastError.message });
-        else if (!response) resolve({ error: 'No response from background' });
+        else if (!response) resolve({ error: BACKGROUND_NO_RESPONSE_MSG });
         else if (response.error) resolve({ error: response.error });
         else resolve({ data: response.data });
       });
@@ -299,7 +324,7 @@ function apiPost(body) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type: 'API_REQUEST', payload: { url: feedUrl, method: 'POST', body } }, (response) => {
       if (chrome.runtime.lastError) resolve({ error: chrome.runtime.lastError.message });
-      else if (!response) resolve({ error: 'No response from background' });
+      else if (!response) resolve({ error: BACKGROUND_NO_RESPONSE_MSG });
       else resolve(response);
     });
   });
@@ -309,7 +334,7 @@ function apiGet(url) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type: 'API_REQUEST', payload: { url, method: 'GET' } }, (response) => {
       if (chrome.runtime.lastError) resolve({ error: chrome.runtime.lastError.message });
-      else if (!response) resolve({ error: 'No response from background' });
+      else if (!response) resolve({ error: BACKGROUND_NO_RESPONSE_MSG });
       else resolve(response);
     });
   });
@@ -338,7 +363,7 @@ async function loadProjects() {
     serverConnected = false;
     setFeedServerStatus(false, 'Disconnected');
     if (sel) sel.innerHTML = '<option value="0">Default (no server)</option>';
-    if (hint) hint.textContent = serverOfflineMsg();
+    if (hint) hint.textContent = 'Disconnected — see the DevLynx Server line in the status bar (hover for details).';
     updateStatusBar();
     return;
   }
@@ -364,6 +389,22 @@ async function loadProjects() {
   if (hint) hint.textContent = statusMessage === 'Connected' ? 'Choose project for screenshot and tasks.' : hint.textContent;
 }
 
+function offlineStatusBarTitle() {
+  const paused =
+    ' Auto-retry paused to limit server requests — click connection status or ⟳ to retry.';
+  return serverOfflineMsg() + (feedDisconnectPollPaused ? paused : '');
+}
+
+function refreshOfflineConnectionTitles() {
+  const el = document.getElementById('connection-status');
+  const serverEl = document.getElementById('status-bar-server');
+  if (!serverConnected) {
+    const t = offlineStatusBarTitle();
+    if (el) el.title = t;
+    if (serverEl) serverEl.title = t;
+  }
+}
+
 function setFeedServerStatus(connected, message, titleOverride) {
   const el = document.getElementById('connection-status');
   const statusText = document.getElementById('status-text');
@@ -372,23 +413,21 @@ function setFeedServerStatus(connected, message, titleOverride) {
   el.classList.remove('checking');
   el.classList.toggle('error', !connected);
   el.classList.toggle('ok', connected);
-  el.title = titleOverride != null ? titleOverride : 'Click to retry connection';
+  if (titleOverride != null) {
+    el.title = titleOverride;
+  } else if (connected) {
+    el.title = 'Click to retry connection';
+  } else {
+    el.title = offlineStatusBarTitle();
+  }
   if (statusText) {
     statusText.textContent = connected ? message || 'Connected' : message || 'Disconnected';
   }
   if (hintEl) {
-    hintEl.hidden = !!connected;
-    if (!connected) {
-      if (hintEl.dataset.pollPaused) {
-        hintEl.textContent =
-          serverOfflineMsg() +
-          ' Auto-retry paused to limit server requests — click connection status or ⟳ to retry.';
-      } else {
-        hintEl.textContent = serverOfflineMsg();
-      }
-    } else if (hintEl.dataset.pollPaused) {
-      delete hintEl.dataset.pollPaused;
-    }
+    hintEl.hidden = true;
+  }
+  if (connected) {
+    feedDisconnectPollPaused = false;
   }
 }
 
@@ -399,7 +438,7 @@ function updateStatusBar() {
   if (serverEl) {
     serverEl.textContent = serverConnected ? '● DevLynx Server: Connected' : '● DevLynx Server: Disconnected';
     serverEl.className = 'status-bar-item' + (serverConnected ? ' ok' : ' error');
-    serverEl.title = serverConnected ? 'Server is running' : 'Click to retry connection';
+    serverEl.title = serverConnected ? 'Server is running' : offlineStatusBarTitle();
   }
   if (openaiEl) {
     openaiEl.textContent = userOpenAiReady ? '● OpenAI: Your API key' : '● OpenAI: Add your key';
@@ -497,25 +536,47 @@ function getVersion() {
   } catch (_) { return '1.1.3'; }
 }
 
-/** Pro is derived from signed JWT + local validation (not from plan flags). */
+/** Pro: dev unlock key, or signed JWT + local validation. */
 function getPlan() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([LICENSE_TOKEN_STORAGE_KEY], (r) => {
-      if (chrome.runtime.lastError) {
-        resolve('free');
-        return;
+    chrome.storage.local.get(
+      [LICENSE_TOKEN_STORAGE_KEY, LICENSE_KEY_USER_STORAGE_KEY, LICENSE_KEY_STORAGE_KEY],
+      (r) => {
+        if (chrome.runtime.lastError) {
+          resolve('free');
+          return;
+        }
+        const userK =
+          (r && r[LICENSE_KEY_USER_STORAGE_KEY] && String(r[LICENSE_KEY_USER_STORAGE_KEY]).trim()) || '';
+        const lensK =
+          (r && r[LICENSE_KEY_STORAGE_KEY] && String(r[LICENSE_KEY_STORAGE_KEY]).trim()) || '';
+        if (userK === DEVLYNX_DEV_UNLOCK_KEY || lensK === DEVLYNX_DEV_UNLOCK_KEY) {
+          resolve('pro');
+          return;
+        }
+        const token =
+          (r && r[LICENSE_TOKEN_STORAGE_KEY] && String(r[LICENSE_TOKEN_STORAGE_KEY]).trim()) || '';
+        if (!token || typeof devlynxValidateLicenseToken !== 'function') {
+          resolve('free');
+          return;
+        }
+        getOrCreateDeviceId()
+          .then((deviceId) => devlynxValidateLicenseToken(token, chrome.runtime.id, deviceId))
+          .then((v) => {
+            if (!v.ok && v.reason === 'hs256_not_supported_locally') {
+              queueMicrotask(() => {
+                setPanelLicenseInlineStatus(
+                  'License token format not supported. Please contact support.',
+                  'error'
+                );
+              });
+            }
+            return v.ok ? 'pro' : 'free';
+          })
+          .then(resolve)
+          .catch(() => resolve('free'));
       }
-      const token =
-        (r && r[LICENSE_TOKEN_STORAGE_KEY] && String(r[LICENSE_TOKEN_STORAGE_KEY]).trim()) || '';
-      if (!token || typeof devlynxValidateLicenseToken !== 'function') {
-        resolve('free');
-        return;
-      }
-      getOrCreateDeviceId()
-        .then((deviceId) => devlynxValidateLicenseToken(token, chrome.runtime.id, deviceId))
-        .then((v) => resolve(v.ok ? 'pro' : 'free'))
-        .catch(() => resolve('free'));
-    });
+    );
   });
 }
 
@@ -741,10 +802,10 @@ function resetAnswerBlockTimestampForEl(contentEl) {
   if (ts) ts.textContent = '—';
   const block = contentEl.closest('.answer-block');
   if (block) block.classList.remove('is-expanded');
-  const expandEmoji = block?.querySelector(
-    '.btn-expand-answer[data-expand-for="' + contentEl.id + '"] .expand-emoji'
+  const expandBtn = block?.querySelector(
+    '.btn-expand-answer[data-expand-for="' + contentEl.id + '"]'
   );
-  if (expandEmoji) expandEmoji.textContent = '⬆️';
+  if (expandBtn) expandBtn.classList.remove('expanded');
 }
 
 function setAnswerWithMarkdown(el, rawText, options) {
@@ -959,6 +1020,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   let licenseVerifyInFlight = false;
+  let licenseVerifyAbort = null;
+  let licenseVerifyUserCancelled = false;
+
+  ref('verify-license-cancel-btn')?.addEventListener('click', () => {
+    licenseVerifyUserCancelled = true;
+    try {
+      licenseVerifyAbort?.abort();
+    } catch (_) {}
+  });
+
   async function verifyLicenseFromPanel() {
     const input = document.getElementById('license-key-input');
     const key = (input && input.value && input.value.trim()) || '';
@@ -966,8 +1037,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       setPanelLicenseInlineStatus('Please enter a license key.', 'error');
       return;
     }
+    if (key === DEVLYNX_DEV_UNLOCK_KEY) {
+      await new Promise((resolve) => {
+        chrome.storage.local.remove([LICENSE_TOKEN_STORAGE_KEY], () => {
+          chrome.storage.local.set(
+            {
+              [PLAN_STORAGE_KEY]: 'pro',
+              [PLAN_MIRROR_KEY]: 'pro',
+              [LICENSE_KEY_USER_STORAGE_KEY]: key,
+              [LICENSE_KEY_STORAGE_KEY]: key,
+              [LICENSE_VERIFIED_AT_KEY]: Date.now(),
+              [LICENSE_STATUS_CHECKED_AT_KEY]: Date.now()
+            },
+            resolve
+          );
+        });
+      });
+      applyPlanUI('pro');
+      await updateTrialUI();
+      updateStatusBar();
+      setPanelLicenseInlineStatus('Dev unlock accepted. Pro features enabled.', 'success');
+      if (licensePanel) {
+        licensePanel.classList.remove('open');
+        licensePanel.setAttribute('aria-hidden', 'true');
+        activateLicenseToggle?.setAttribute('aria-expanded', 'false');
+      }
+      return;
+    }
     if (licenseVerifyInFlight) return;
     licenseVerifyInFlight = true;
+    licenseVerifyUserCancelled = false;
+    const cancelBtn = document.getElementById('verify-license-cancel-btn');
+    if (cancelBtn) cancelBtn.hidden = false;
+    licenseVerifyAbort = new AbortController();
+    const verifyTimeoutMs = 45000;
+    const verifyTimeoutId = setTimeout(() => {
+      try {
+        licenseVerifyAbort?.abort();
+      } catch (_) {}
+    }, verifyTimeoutMs);
     setPanelLicenseInlineStatus('Verifying…', '');
     const _verifySlowTimer = setTimeout(() => {
       setPanelLicenseInlineStatus('Still verifying… this can take up to 45 seconds.', '');
@@ -981,33 +1089,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         device_id: deviceId,
         extension_id: chrome.runtime.id
       });
-      // Vercel cold start + Gumroad round-trip can exceed 5s
-      const verifySignal =
-        typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
-          ? AbortSignal.timeout(45000)
-          : undefined;
       for (const vUrl of panelLicenseUrlCandidates('/verify-license')) {
         try {
           const res = await fetch(vUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: verifyBody,
-            signal: verifySignal
+            signal: licenseVerifyAbort.signal
           });
           const text = await res.text();
           if (!res.ok) {
             console.warn('[devlynx-debug] verify response status:', res.status);
-            console.warn('[devlynx-debug] verify response body:', text.slice(0, 800));
           }
           try {
             data = text ? JSON.parse(text) : {};
           } catch (parseErr) {
-            console.warn('[devlynx-debug] verify JSON parse error:', parseErr.message, text.slice(0, 800));
+            console.warn('[devlynx-debug] verify JSON parse error:', parseErr.message);
             data = {};
           }
           httpOk = true;
           break;
-        } catch (_) {}
+        } catch (e) {
+          if (e && e.name === 'AbortError') throw e;
+        }
       }
       if (!httpOk) {
         setPanelLicenseInlineStatus(serverOfflineMsg(), 'error');
@@ -1058,21 +1162,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         setPanelLicenseInlineStatus(panelVerifyErrorMessage(data), 'error');
       }
     } catch (err) {
-      setPanelLicenseInlineStatus(serverOfflineMsg(), 'error');
+      if (err && err.name === 'AbortError') {
+        if (licenseVerifyUserCancelled) {
+          setPanelLicenseInlineStatus('', '');
+        } else {
+          setPanelLicenseInlineStatus(
+            'Verification timed out. Check your internet connection and try again.',
+            'error'
+          );
+        }
+      } else {
+        setPanelLicenseInlineStatus(serverOfflineMsg(), 'error');
+      }
     } finally {
+      clearTimeout(verifyTimeoutId);
       clearTimeout(_verifySlowTimer);
+      if (cancelBtn) cancelBtn.hidden = true;
+      licenseVerifyAbort = null;
       licenseVerifyInFlight = false;
     }
   }
 
   ref('verify-license-btn')?.addEventListener('click', () => {
     verifyLicenseFromPanel();
-  });
-
-  document.getElementById('license-key-input')?.addEventListener('paste', () => {
-    setTimeout(() => {
-      verifyLicenseFromPanel();
-    }, 200);
   });
 
   updateRatePromptUI();
@@ -1088,12 +1200,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     if (feedDisconnectAutoPollCount >= FEED_DISCONNECT_POLL_MAX) {
-      const hintEl = document.getElementById('disconnect-hint');
-      if (hintEl && !hintEl.dataset.pollPaused) {
-        hintEl.dataset.pollPaused = '1';
-        hintEl.textContent =
-          serverOfflineMsg() +
-          ' Auto-retry paused to limit server requests — click connection status or ⟳ to retry.';
+      if (!feedDisconnectPollPaused) {
+        feedDisconnectPollPaused = true;
+        refreshOfflineConnectionTitles();
+        updateStatusBar();
       }
       return;
     }
@@ -1114,8 +1224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const block = content && content.closest('.answer-block');
       if (block) {
         block.classList.toggle('is-expanded');
-        const em = expandBtn.querySelector('.expand-emoji');
-        if (em) em.textContent = block.classList.contains('is-expanded') ? '⬇️' : '⬆️';
+        expandBtn.classList.toggle('expanded', block.classList.contains('is-expanded'));
         expandBtn.title = block.classList.contains('is-expanded') ? 'Collapse' : 'Expand';
       }
       return;
@@ -1141,13 +1250,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!el) return;
     const text = el.innerText || el.textContent || '';
     if (!text) return;
-    const emojiSpan = btn.querySelector('.answer-btn-emoji');
-    const prevEmoji = emojiSpan ? emojiSpan.textContent : '';
+    const clip = btn.querySelector('.copy-icon-clipboard');
+    const check = btn.querySelector('.copy-icon-check');
     navigator.clipboard.writeText(text).then(() => {
-      if (emojiSpan) {
-        emojiSpan.textContent = '✓';
+      if (clip && check) {
+        clip.hidden = true;
+        check.hidden = false;
         setTimeout(() => {
-          emojiSpan.textContent = prevEmoji || '📋';
+          clip.hidden = false;
+          check.hidden = true;
         }, 1500);
       } else {
         const label = btn.textContent || 'Copy';
@@ -1156,7 +1267,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           btn.textContent = label;
         }, 1500);
       }
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error('[DevLynx] copy failed:', err);
+    });
   });
 
   const EXPLAIN_MODE_KEY = 'devlens_explain_mode';
@@ -1607,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       const data = result.data;
       const css = (data && data.css) || '';
-      const js = (data && data.js) || '';
+      let js = (data && data.js) || '';
       if (!css && !js) {
         const msg = (data && data.error) || 'No CSS/JS from AI. Check your OpenAI API key and try a clearer prompt.';
         setStatus('generate-mod-status', msg, true);
@@ -1621,6 +1734,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateTrialUI();
         updateStatusBar();
       }
+      const hasJs = typeof js === 'string' && js.trim().length > 0;
+      let successMsg = 'Mod applied and saved.';
+      if (hasJs) {
+        const confirmed = confirmJsModExecution(tab.url);
+        if (!confirmed) {
+          if (!css || !String(css).trim()) {
+            setStatus('generate-mod-status', 'Cancelled. JS mod was not applied.', true);
+            return;
+          }
+          js = '';
+          successMsg = 'Applied CSS only. JS mod was skipped.';
+        } else {
+          successMsg = 'Mod (including JavaScript) applied and saved.';
+        }
+      }
       chrome.runtime.sendMessage({ type: 'INJECT_MOD', tabId: tab.id, css, js }, (res) => {
         const err = chrome.runtime.lastError && chrome.runtime.lastError.message;
         if (err) {
@@ -1628,7 +1756,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           setStatus('generate-mod-status', err + hint, true);
           return;
         }
-        if (res && res.ok) setStatus('generate-mod-status', 'Mod applied and saved.');
+        if (res && res.ok) setStatus('generate-mod-status', successMsg);
         else setStatus('generate-mod-status', (res && res.error) || 'Inject failed. Reload the page and try again.', true);
       });
     } catch (e) {
@@ -1678,8 +1806,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateApiButtons() {
     const hasUrl = !!(urlInput && urlInput.value.trim());
-    if (generateCodeBtn) generateCodeBtn.disabled = !userOpenAiReady || !hasUrl;
-    if (explainBtn) explainBtn.disabled = !userOpenAiReady || !lastApiPayload;
+    if (generateCodeBtn) {
+      generateCodeBtn.disabled = !userOpenAiReady || !hasUrl;
+      if (!userOpenAiReady) generateCodeBtn.title = API_KEY_NOT_CONFIGURED_MSG;
+      else if (!hasUrl) generateCodeBtn.title = API_TESTER_SEND_FIRST_HINT;
+      else generateCodeBtn.title = '';
+    }
+    if (explainBtn) {
+      explainBtn.disabled = !userOpenAiReady || !lastApiPayload;
+      if (!userOpenAiReady) explainBtn.title = API_KEY_NOT_CONFIGURED_MSG;
+      else if (!lastApiPayload) explainBtn.title = API_TESTER_SEND_FIRST_HINT;
+      else explainBtn.title = '';
+    }
   }
   if (urlInput) urlInput.addEventListener('input', updateApiButtons);
 
@@ -1777,7 +1915,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         if (!response) {
-          if (statusEl) { statusEl.textContent = 'Error: No response from background'; statusEl.classList.add('error'); }
+          if (statusEl) {
+            statusEl.textContent = 'Error: ' + BACKGROUND_NO_RESPONSE_MSG;
+            statusEl.classList.add('error');
+          }
           return;
         }
         if (!response.ok && response.error) {

@@ -9,9 +9,10 @@
 <body>
   <div class="panel">
     <header class="header">
-      <h1><span class="glow">DevLynx AI</span></h1>
-      <p class="header-version" id="header-version" aria-label="Version"></p>
-      <p class="tagline">Explain, debug &amp; modify any website</p>
+      <div class="header-title-row">
+        <h1><span class="glow">DevLynx AI</span></h1>
+        <p class="header-version" id="header-version" aria-label="Version"></p>
+      </div>
       <div
         id="connection-status"
         class="connection-status"
@@ -56,9 +57,9 @@
         <div class="answer-header">
           <h4>Explain element</h4>
           <div class="answer-actions">
-            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="explain-element-answer" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
-            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="explain-element-answer" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
-            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="explain-element-answer" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="explain-element-answer" title="Copy"><span class="btn-copy-icon-wrap" aria-hidden="true"><svg class="answer-action-icon copy-icon-clipboard" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v1"/></svg><svg class="answer-action-icon copy-icon-check" hidden xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="explain-element-answer" title="Clear"><svg class="answer-action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="explain-element-answer" title="Expand"><svg class="answer-action-icon icon-chevron-expand" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
         </div>
         <div id="explain-element-answer" class="answer-content dev-answer empty"></div>
@@ -81,9 +82,9 @@
         <div class="answer-header">
           <h4>Dev assistant</h4>
           <div class="answer-actions">
-            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="dev-answer" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
-            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="dev-answer" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
-            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="dev-answer" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="dev-answer" title="Copy"><span class="btn-copy-icon-wrap" aria-hidden="true"><svg class="answer-action-icon copy-icon-clipboard" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v1"/></svg><svg class="answer-action-icon copy-icon-check" hidden xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="dev-answer" title="Clear"><svg class="answer-action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="dev-answer" title="Expand"><svg class="answer-action-icon icon-chevron-expand" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
         </div>
         <div id="dev-answer" class="answer-content dev-answer" aria-live="polite"></div>
@@ -98,12 +99,12 @@
         <h2>Error explainer <span class="pro-badge">PRO</span></h2>
         <div class="error-capture-controls">
           <button type="button" id="get-page-errors" class="btn btn-secondary" data-requires-user-openai>
-            <span class="btn-inline-icon" aria-hidden="true">📋</span> Get Errors
+            <span class="btn-inline-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v1"/></svg></span> Get Errors
           </button>
           <span class="error-count-badge" id="error-count" hidden>0</span>
         </div>
       </div>
-      <p class="hint">Paste console output below, or <strong>Get Errors</strong> — only logs after this tab loaded (reload the page if needed). Network failures in DevTools are not captured unless the site logs them. The AI often starts with the <strong>first</strong> distinct error; paste more blocks or run Explain again for the rest. Note: errors inside payment iframes (e.g. Stripe checkout) cannot be captured.</p>
+      <p class="hint">Paste a stack trace below, or use <strong>Get Errors</strong> to capture page errors. Reload the page first if errors are missing. Payment iframes (e.g. Stripe) cannot be captured.</p>
       <textarea id="error-explainer-input" rows="3" placeholder="Paste error or stack trace…"></textarea>
       <button type="button" id="error-explainer-btn" class="btn btn-secondary full mt-sm" data-requires-user-openai>Explain error</button>
       <p id="error-explainer-status" class="status"></p>
@@ -111,9 +112,9 @@
         <div class="answer-header">
           <h4>Error analysis</h4>
           <div class="answer-actions">
-            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="error-explainer-answer" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
-            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="error-explainer-answer" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
-            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="error-explainer-answer" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="error-explainer-answer" title="Copy"><span class="btn-copy-icon-wrap" aria-hidden="true"><svg class="answer-action-icon copy-icon-clipboard" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v1"/></svg><svg class="answer-action-icon copy-icon-check" hidden xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="error-explainer-answer" title="Clear"><svg class="answer-action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="error-explainer-answer" title="Expand"><svg class="answer-action-icon icon-chevron-expand" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
         </div>
 
@@ -131,9 +132,9 @@
         <div class="answer-header">
           <h4>Last AI result</h4>
           <div class="answer-actions">
-            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="last-ai-result" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
-            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="last-ai-result" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
-            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="last-ai-result" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+            <button type="button" class="btn-icon btn-copy-answer" data-copy-from="last-ai-result" title="Copy"><span class="btn-copy-icon-wrap" aria-hidden="true"><svg class="answer-action-icon copy-icon-clipboard" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v1"/></svg><svg class="answer-action-icon copy-icon-check" hidden xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+            <button type="button" class="btn-icon btn-clear-answer" data-clear-from="last-ai-result" title="Clear"><svg class="answer-action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <button type="button" class="btn-icon btn-expand-answer" data-expand-for="last-ai-result" title="Expand"><svg class="answer-action-icon icon-chevron-expand" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
           </div>
         </div>
         <div id="last-ai-result" class="answer-content dev-answer empty"></div>
@@ -152,6 +153,7 @@
       <textarea id="mod-prompt-input" rows="2" placeholder="e.g. Make the header blue and hide the footer"></textarea>
       <button type="button" id="generate-mod-btn" class="btn btn-primary full" data-requires-user-openai>Generate mod (AI)</button>
       <p id="generate-mod-status" class="status"></p>
+      <p class="hint hint-warning">Security warning: AI-generated JavaScript runs in the page context and can read or modify visible page data. Apply JS mods only on sites you trust.</p>
       
       <div class="row mt-md">
         <button type="button" id="reset-page-mods" class="btn btn-secondary full" title="Remove all AI mods for this site">Reset Site (Undo)</button>
@@ -242,9 +244,9 @@
           <div class="answer-header">
             <h4>AI analysis</h4>
             <div class="answer-actions">
-              <button type="button" class="btn-icon btn-copy-answer" data-copy-from="api-ai-response" title="Copy"><span class="answer-btn-emoji" aria-hidden="true">📋</span></button>
-              <button type="button" class="btn-icon btn-clear-answer" data-clear-from="api-ai-response" title="Clear"><span class="answer-btn-emoji" aria-hidden="true">🗑️</span></button>
-              <button type="button" class="btn-icon btn-expand-answer" data-expand-for="api-ai-response" title="Expand"><span class="answer-btn-emoji expand-emoji" aria-hidden="true">⬆️</span></button>
+              <button type="button" class="btn-icon btn-copy-answer" data-copy-from="api-ai-response" title="Copy"><span class="btn-copy-icon-wrap" aria-hidden="true"><svg class="answer-action-icon copy-icon-clipboard" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v1"/></svg><svg class="answer-action-icon copy-icon-check" hidden xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+              <button type="button" class="btn-icon btn-clear-answer" data-clear-from="api-ai-response" title="Clear"><svg class="answer-action-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+              <button type="button" class="btn-icon btn-expand-answer" data-expand-for="api-ai-response" title="Expand"><svg class="answer-action-icon icon-chevron-expand" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
             </div>
           </div>
           <pre id="api-ai-response" class="answer-content explain-response"></pre>

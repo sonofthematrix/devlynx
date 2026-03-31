@@ -113,20 +113,22 @@ h3 {
   text-shadow: 0 0 12px rgba(234, 179, 8, 0.5), 0 0 24px rgba(250, 204, 21, 0.2);
 }
 
+.header-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.header-title-row .header-version {
+  margin: 0;
+}
+
 .header-version {
   margin: 2px 0 0;
   font-size: 10px;
   color: var(--text-muted);
   letter-spacing: 0.04em;
   font-weight: 600;
-}
-
-.tagline {
-  margin: 4px 0 0;
-  font-size: 11px;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-  font-weight: 500;
 }
 
 .connection-status {
@@ -286,9 +288,16 @@ h3 {
 }
 
 .btn-inline-icon {
-  display: inline-block;
-  line-height: 1;
-  transform: translateY(1px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.btn-inline-icon svg {
+  display: block;
 }
 
 .error-count-badge {
@@ -556,6 +565,35 @@ select {
   font-size: 18px;
 }
 
+.btn-copy-icon-wrap {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-copy-icon-wrap .copy-icon-check {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.answer-action-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.btn-expand-answer .icon-chevron-expand {
+  transition: transform 0.15s ease;
+}
+
+.btn-expand-answer.expanded .icon-chevron-expand {
+  transform: rotate(180deg);
+}
+
 .wrap {
   flex-wrap: wrap;
 }
@@ -649,6 +687,11 @@ select {
   margin: 8px 0 0;
   line-height: 1.4;
   opacity: 0.8;
+}
+
+.hint.hint-warning {
+  color: rgba(245, 158, 11, 0.95);
+  opacity: 1;
 }
 
 .status {
