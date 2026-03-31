@@ -1,13 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(find C:cursorProjectsdevlens-saas/website -type f -name *.html)",
-      "Bash(identify \"C:\\\\cursorProjects\\\\devlens-saas/src/icons/icon128.png\")",
-      "Bash(node -e \":*)",
-      "WebFetch(domain:sonofthematrix.gumroad.com)",
-      "Read(//c/cursorProjects/screenshots en mock ups/chrome-web-store-assets/exported/**)",
-      "Read(//c/cursorProjects/screenshots en mock ups/chrome-web-store-assets/real-uploads/**)",
-      "Read(//c/cursorProjects/screenshots en mock ups/chrome-web-store-assets/generated/**)"
-    ]
+    "allow": []
   }
 }
